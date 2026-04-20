@@ -1,0 +1,124 @@
+# ============================================================
+# Granola CRM — .gitignore
+# ============================================================
+# CRITICO: dados de clientes e credenciais estao sob sigilo
+# profissional (OAB). NUNCA commitar arquivos das secoes abaixo.
+
+# ---- Credenciais e tokens (OAuth Google, API keys) ----
+granola/data/gcal_credentials.json
+granola/data/gcal_token.json
+granola/data/gcal_config.json
+**/gcal_credentials.json
+**/gcal_token.json
+**/gcal_config.json
+*.token.json
+*credentials*.json
+*secret*.json
+.env
+.env.*
+!.env.example
+
+# ---- Banco de dados (dados reais de clientes) ----
+granola/data/*.db
+granola/data/*.db-shm
+granola/data/*.db-wal
+granola/data/*.bak.*
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/*.sqlite
+**/*.sqlite3
+
+# ---- Uploads e documentos de clientes ----
+granola/uploads/
+granola/data/uploads/
+**/uploads/
+documentos/
+
+# ---- Perfis Chromium (sessoes logadas em tribunais) ----
+chromium-profile-*/
+chrome-profile-*/
+granola/data/chromium-profile-*/
+**/chromium-profile-*/
+
+# ---- Planilhas e documentos reais ----
+# Bloqueia por padrao. Se precisar commitar template, abra excecao explicita.
+*.xlsx
+*.xls
+*.csv
+*.pdf
+*.docx
+*.doc
+
+# ---- Python ----
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.venv/
+venv/
+env/
+
+# ---- Logs ----
+*.log
+logs/
+
+# ---- Build / Dist / Runtime ----
+dist/
+build/
+*.spec
+runtime/
+
+# ---- Node (para frontend-v2 futuro) ----
+node_modules/
+.vite/
+frontend-v2/dist/
+frontend-v2/node_modules/
+frontend-v2/.vite/
+frontend-v2/coverage/
+
+# ---- Marketing (videos grandes, redacted assets — permite so scripts .py/.js) ----
+marketing/video/**
+!marketing/video/*.py
+!marketing/video/*.js
+!marketing/video/*.md
+marketing/prints/
+video_granola/
+
+# ---- Imagens/midia soltas na raiz (screenshots WhatsApp, fotos) ----
+/*.jpg
+/*.jpeg
+/*.png
+/*.gif
+/*.mp4
+/*.mov
+/*.webp
+
+# ---- Prompts de contexto com credenciais hardcoded ----
+Integração DATAju.txt
+Integracao DATAju.txt
+*prompt*.txt
+CONTEXT.txt
+
+# ---- Claude Code workspace (configs locais) ----
+.claude/
+
+# ---- Backups e temp ----
+*.bak
+*.backup
+*.tmp
+*.temp
+~$*
+
+# ---- IDE / OS ----
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
