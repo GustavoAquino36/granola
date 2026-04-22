@@ -60,6 +60,9 @@ ALLOWED_ORIGINS = {
     "http://localhost:3458",
     "https://granola.valerius.com.br",
     "https://granola.lucasmunhoz.adv.br",
+    # TODO remover no cutover da Fase 7 (dev do frontend-v2 via Vite em :5173)
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
 }
 
 CSP_HEADER = (

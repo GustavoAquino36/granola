@@ -1,0 +1,24 @@
+# Granola CRM — dependencias de runtime
+# Python 3.10+ necessario (usa | em type hints e match/case em alguns modulos)
+#
+# Instalacao:
+#   python -m venv .venv
+#   .venv\Scripts\activate  (Windows)  ou  source .venv/bin/activate  (Linux/Mac)
+#   pip install -r requirements.txt
+
+# HTTP para DataJud (CNJ) e DJEN/PCP — ambos usam urllib.request da stdlib
+# mas requests e usado pelos scrapers Selenium (publicacoes_pje.py)
+requests>=2.31,<3
+
+# Selenium fallback — e-SAJ + PJe via Chromium CDP :9222
+# So necessario pra usar a "Verificacao Manual". DataJud/DJEN (padrao) nao usam.
+selenium>=4.20,<5
+
+# Import de planilhas Excel — usado por importar_planilha.py
+openpyxl>=3.1,<4
+
+# Google Calendar OAuth2 + API (gcal_sync.py)
+# Opcional: so necessario se for conectar GCal. App sobe sem isso.
+google-auth>=2.28,<3
+google-auth-oauthlib>=1.2,<2
+google-api-python-client>=2.120,<3

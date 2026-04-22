@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+/* Estrategia de dark mode: [data-theme="dark"] no <html> */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* =========================================================================
+   FONTS — self-hosted via @fontsource (critico pra funcionar offline no
+   GranolaBox pendrive sem internet)
+   ========================================================================= */
+@import "@fontsource/cormorant-garamond/400.css";
+@import "@fontsource/cormorant-garamond/500.css";
+@import "@fontsource/cormorant-garamond/600.css";
+@import "@fontsource/cormorant-garamond/400-italic.css";
+@import "@fontsource/cormorant-garamond/500-italic.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+
+/* =========================================================================
+   TOKENS — Brandbook Granola Edicao 02 (Abril 2026)
+   Referencia canonica: /granola/marca/frontend/index.html v2.0.0
+   ========================================================================= */
+@theme {
+  /* -------- Fontes -------- */
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+
+  /* -------- Cores de marca (imutaveis entre temas) -------- */
+  --color-roxo: #332030;
+  --color-roxo-profundo: #1E1220;
+  --color-roxo-claro: #4A3445;
+  --color-dourado: #C69E5B;
+  --color-dourado-claro: #D3AD6C;
+  --color-marfim: #F0ECE8;
+  --color-tinta: #2A1829;
+  --color-fumaca: #6B6675;
+
+  /* -------- Cores funcionais (semaforo discreto, nunca saturado) -------- */
+  --color-sucesso: #3A7D44;
+  --color-alerta: #C47A3D;
+  --color-erro: #A83A3A;
+
+  /* -------- Tokens semanticos de app (flippam no dark) -------- */
+  --color-bg: #F0ECE8;
+  --color-surface: #FFFFFF;
+  --color-surface-alt: #FAF7F3;
+  --color-text: #2A1829;
+  --color-muted: #6B6675;
+  --color-border: rgba(42, 24, 41, 0.10);
+  --color-border-strong: rgba(42, 24, 41, 0.18);
+  --color-hairline: rgba(198, 158, 91, 0.55);
+
+  /* -------- Radii -------- */
+  --radius-card: 6px;
+  --radius-pill: 999px;
+
+  /* -------- Sombras -------- */
+  --shadow-1: 0 1px 0 rgba(42, 24, 41, 0.04), 0 1px 2px rgba(42, 24, 41, 0.05);
+  --shadow-2: 0 1px 0 rgba(42, 24, 41, 0.04), 0 6px 24px -8px rgba(42, 24, 41, 0.12);
+  --shadow-elev: 0 24px 60px -20px rgba(30, 18, 32, 0.45);
+
+  /* -------- Animacao -------- */
+  --ease-valerius: cubic-bezier(0.22, 1, 0.36, 1);
+  --default-transition-duration: 180ms;
+  --default-transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* -------- Escala tipografica nomeada (do Brandbook v2) -------- */
+  --text-display-1: 4.5rem;
+  --text-display-1--line-height: 1.05;
+  --text-display-1--letter-spacing: -0.01em;
+
+  --text-display-2: 3.5rem;
+  --text-display-2--line-height: 1.08;
+
+  --text-display-3: 2.5rem;
+  --text-display-3--line-height: 1.12;
+
+  --text-lead: 1.75rem;
+  --text-lead--line-height: 1.3;
+
+  --text-eyebrow: 0.75rem;
+  --text-eyebrow--line-height: 1.2;
+  --text-eyebrow--letter-spacing: 0.18em;
+
+  --text-micro: 0.75rem;
+  --text-micro--line-height: 1.3;
+  --text-micro--letter-spacing: 0.04em;
+
+  --text-tech: 0.8125rem;
+  --text-tech--line-height: 1.4;
+}
+
+/* =========================================================================
+   DARK MODE — overrides dos tokens semanticos (marca permanece igual)
+   ========================================================================= */
+[data-theme="dark"] {
+  --color-bg: #1E1220;
+  --color-surface: #332030;
+  --color-surface-alt: #4A3445;
+  --color-text: #F0ECE8;
+  --color-muted: #B6ADBC;
+  --color-border: rgba(240, 236, 232, 0.10);
+  --color-border-strong: rgba(240, 236, 232, 0.18);
+  --shadow-1: 0 1px 0 rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-2: 0 1px 0 rgba(0, 0, 0, 0.25), 0 6px 24px -8px rgba(0, 0, 0, 0.55);
+}
+
+/* =========================================================================
+   BASE
+   ========================================================================= */
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    /* Sem scrollbar flashing no toggle dark/light */
+    color-scheme: light;
+  }
+  html[data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--color-dourado);
+    color: var(--color-tinta);
+  }
+
+  /* Cormorant Garamond com ligaduras e swashes quando o peso e o estilo permitem */
+  .font-display {
+    font-feature-settings: "dlig", "liga";
+  }
+}
