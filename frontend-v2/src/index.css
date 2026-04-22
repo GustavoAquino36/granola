@@ -45,10 +45,11 @@
   --color-erro: #A83A3A;
 
   /* -------- Tokens semanticos de app (flippam no dark) -------- */
-  --color-bg: #F0ECE8;
+  /* Nomes seguem convencao shadcn/ui (bg-background, text-foreground) */
+  --color-background: #F0ECE8;
   --color-surface: #FFFFFF;
   --color-surface-alt: #FAF7F3;
-  --color-text: #2A1829;
+  --color-foreground: #2A1829;
   --color-muted: #6B6675;
   --color-border: rgba(42, 24, 41, 0.10);
   --color-border-strong: rgba(42, 24, 41, 0.18);
@@ -98,10 +99,10 @@
    DARK MODE — overrides dos tokens semanticos (marca permanece igual)
    ========================================================================= */
 [data-theme="dark"] {
-  --color-bg: #1E1220;
+  --color-background: #1E1220;
   --color-surface: #332030;
   --color-surface-alt: #4A3445;
-  --color-text: #F0ECE8;
+  --color-foreground: #F0ECE8;
   --color-muted: #B6ADBC;
   --color-border: rgba(240, 236, 232, 0.10);
   --color-border-strong: rgba(240, 236, 232, 0.18);
@@ -124,8 +125,8 @@
 
   body {
     margin: 0;
-    background-color: var(--color-bg);
-    color: var(--color-text);
+    background-color: var(--color-background);
+    color: var(--color-foreground);
     font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
