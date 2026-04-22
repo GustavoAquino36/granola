@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react"
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
-import { Bell, LogOut, Search, type LucideIcon } from "lucide-react"
+import { Bell, LogOut, Moon, Search, Sun, type LucideIcon } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
+import { useTheme } from "@/lib/theme"
 import { cn } from "@/lib/utils"
 
 /**
@@ -46,10 +47,31 @@ export function Topbar() {
 
       <SearchBox />
 
+      <ThemeToggle />
       <IconButton label="Notificações" Icon={Bell} />
 
       <UserMenu />
     </header>
+  )
+}
+
+function ThemeToggle() {
+  const { theme, toggle } = useTheme()
+  const isDark = theme === "dark"
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label={isDark ? "Mudar para tema claro" : "Mudar para tema escuro"}
+      title={isDark ? "Tema escuro ativo" : "Tema claro ativo"}
+      className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-pill bg-transparent text-muted transition-colors duration-[180ms] hover:bg-dourado/10 hover:text-foreground"
+    >
+      {isDark ? (
+        <Sun className="h-4 w-4" strokeWidth={1.75} />
+      ) : (
+        <Moon className="h-4 w-4" strokeWidth={1.75} />
+      )}
+    </button>
   )
 }
 

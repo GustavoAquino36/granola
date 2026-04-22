@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router-dom"
 import { AppShell } from "@/components/layout/AppShell"
+import { AgoraPage } from "@/pages/AgoraPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { PlaceholderPage } from "@/pages/PlaceholderPage"
 import { ProtectedRoute } from "./ProtectedRoute"
@@ -30,13 +31,7 @@ export const router = createBrowserRouter([
         children: [
           {
             path: "/agora",
-            element: (
-              <PlaceholderPage
-                title="Agora"
-                phase={1}
-                hint="Home com greeting Cormorant e placeholder da Fase 2 entra no Commit 5 desta fase."
-              />
-            ),
+            element: <AgoraPage />,
           },
           {
             path: "/clientes",
