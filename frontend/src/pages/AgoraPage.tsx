@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import { Download, Plus } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { AlertasCard } from "@/components/features/agora/AlertasCard"
+import { AtividadeRecenteCard } from "@/components/features/agora/AtividadeRecenteCard"
 import { KpiGrid } from "@/components/features/agora/KpiGrid"
 import { ProximosPrazosCard } from "@/components/features/agora/ProximosPrazosCard"
 import { cn } from "@/lib/utils"
@@ -85,24 +86,22 @@ export function AgoraPage() {
       <KpiGrid />
 
       {/* ================= GRID PRINCIPAL ================= */}
-      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
+      <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
         <ProximosPrazosCard />
         <AlertasCard />
       </div>
 
-      {/* ================= EM CONSTRUCAO (resto da Fase 2A) ================= */}
-      <section
-        aria-labelledby="proxima-entrega"
-        className="rounded-card border border-dashed border-border bg-surface-alt p-5"
-      >
-        <p className="font-sans text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted">
-          Proximo desta fase
-        </p>
-        <ul className="mt-2 grid gap-1.5 text-sm text-muted md:grid-cols-2">
-          <li>· Atividade recente (timeline de movimentacoes)</li>
-          <li>· Mini calendario com marcadores</li>
-        </ul>
-      </section>
+      {/* ================= GRID SECUNDARIO ================= */}
+      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
+        <AtividadeRecenteCard />
+        {/* Mini calendario entra no proximo commit */}
+        <div className="rounded-card border border-dashed border-border bg-surface-alt p-5 text-[0.8125rem] text-muted">
+          <p className="font-sans text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted">
+            em construcao
+          </p>
+          <p className="mt-2">Calendario mini do mes corrente com marcadores de compromissos e prazos fatais.</p>
+        </div>
+      </div>
 
       {/* ================= DEBUG ================= */}
       {import.meta.env.DEV && (
