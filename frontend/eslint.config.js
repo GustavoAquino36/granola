@@ -20,4 +20,14 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // Componentes shadcn/ui co-exportam `cva` variants junto do componente
+    // (padrao upstream). A regra react-refresh/only-export-components quebra
+    // HMR em 1 arquivo mas manter o fork limpo importa mais — desativamos
+    // apenas pra esta pasta.
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

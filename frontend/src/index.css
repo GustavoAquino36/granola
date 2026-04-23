@@ -51,9 +51,29 @@
   --color-surface-alt: #FAF7F3;
   --color-foreground: #2A1829;
   --color-muted: #6B6675;
+  --color-muted-foreground: #6B6675;
   --color-border: rgba(42, 24, 41, 0.10);
   --color-border-strong: rgba(42, 24, 41, 0.18);
   --color-hairline: rgba(198, 158, 91, 0.55);
+
+  /* -------- Bridge de tokens shadcn/ui -> paleta Valerius --------
+     shadcn components usam nomes semanticos genericos (primary, accent,
+     destructive etc). Mapeamos pra nossa paleta aqui pra que Button,
+     Dialog, Tooltip etc saiam coerentes com a marca sem fork de codigo. */
+  --color-primary: #C69E5B;              /* Dourado — CTAs, highlights */
+  --color-primary-foreground: #2A1829;   /* Tinta em cima do Dourado */
+  --color-secondary: #FAF7F3;            /* surface-alt */
+  --color-secondary-foreground: #2A1829;
+  --color-accent: #FAF7F3;
+  --color-accent-foreground: #2A1829;
+  --color-destructive: #A83A3A;          /* Erro */
+  --color-destructive-foreground: #F0ECE8;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #2A1829;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #2A1829;
+  --color-input: rgba(42, 24, 41, 0.18);
+  --color-ring: #C69E5B;                 /* halo de foco em Dourado */
 
   /* -------- Radii -------- */
   --radius-card: 6px;
@@ -104,10 +124,22 @@
   --color-surface-alt: #4A3445;
   --color-foreground: #F0ECE8;
   --color-muted: #B6ADBC;
+  --color-muted-foreground: #B6ADBC;
   --color-border: rgba(240, 236, 232, 0.10);
   --color-border-strong: rgba(240, 236, 232, 0.18);
   --shadow-1: 0 1px 0 rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-2: 0 1px 0 rgba(0, 0, 0, 0.25), 0 6px 24px -8px rgba(0, 0, 0, 0.55);
+
+  /* Bridge shadcn overrides pra dark */
+  --color-secondary: #4A3445;
+  --color-secondary-foreground: #F0ECE8;
+  --color-accent: #4A3445;
+  --color-accent-foreground: #F0ECE8;
+  --color-card: #332030;
+  --color-card-foreground: #F0ECE8;
+  --color-popover: #332030;
+  --color-popover-foreground: #F0ECE8;
+  --color-input: rgba(240, 236, 232, 0.18);
 }
 
 /* =========================================================================
