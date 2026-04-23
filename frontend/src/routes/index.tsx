@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom"
 import { AppShell } from "@/components/layout/AppShell"
 import { AgoraPage } from "@/pages/AgoraPage"
+import { ClientesPage } from "@/pages/ClientesPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { PlaceholderPage } from "@/pages/PlaceholderPage"
 import { ProtectedRoute } from "./ProtectedRoute"
@@ -35,7 +36,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "/clientes",
-            element: <PlaceholderPage title="Clientes" phase={2} />,
+            element: <ClientesPage />,
           },
           {
             path: "/processos",
