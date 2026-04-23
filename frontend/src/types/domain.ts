@@ -46,6 +46,36 @@ export interface ClientesResponse {
   total: number
 }
 
+/** Resposta de /api/granola/cliente?id=X — Cliente + fields computados do detalhe. */
+export interface ClienteDetail extends Cliente {
+  processos: ClienteProcessoSummary[]
+  total_processos: number
+  financeiro_resumo: {
+    receitas: number
+    despesas: number
+    pendentes: number
+  }
+}
+
+export interface ClienteProcessoSummary {
+  id: number
+  numero_cnj: string | null
+  titulo: string | null
+  area: string
+  status: string
+  fase: string
+  valor_causa: number
+}
+
+/** Shape do body pro upsert. Todos os fields opcionais pro backend
+ *  (menos `nome` e `tipo`). `id` ausente => cria novo; presente => atualiza. */
+export type ClienteInput = Partial<
+  Omit<Cliente, "id" | "criado_em" | "atualizado_em" | "total_processos">
+> & {
+  nome: string
+  tipo: TipoPessoa
+}
+
 // --------------------------------------------------------------------------
 // PROCESSOS
 // --------------------------------------------------------------------------

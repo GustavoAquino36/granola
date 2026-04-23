@@ -1,7 +1,8 @@
-import { apiGet } from "./client"
+import { apiGet, apiPost } from "./client"
 import type {
   AgendaEvent,
-  Cliente,
+  ClienteDetail,
+  ClienteInput,
   ClientesResponse,
   PrazosResponse,
   ProcessosResponse,
@@ -73,8 +74,31 @@ export async function fetchClientes(params: ListarClientesParams = {}) {
   return apiGet<ClientesResponse>(`/api/granola/clientes${suffix}`)
 }
 
-export async function fetchClienteById(id: number) {
-  return apiGet<Cliente>(`/api/granola/cliente?id=${id}`)
+/** GET /api/granola/cliente?id=X retorna { cliente: ClienteDetail } com
+ *  campos extras do detalhe (processos, financeiro_resumo, total_processos). */
+export async function fetchClienteById(id: number): Promise<ClienteDetail> {
+  const response = await apiGet<{ cliente: ClienteDetail }>(
+    `/api/granola/cliente?id=${id}`
+  )
+  return response.cliente
+}
+
+/** POST /api/granola/cliente/upsert — cria se `id` ausente, atualiza se presente.
+ *  Retorna `{ id }` do cliente persistido. */
+export async function upsertCliente(
+  input: ClienteInput & { id?: number }
+): Promise<{ id: number }> {
+  return apiPost<{ id: number }>("/api/granola/cliente/upsert", input)
+}
+
+/** Atalho pra arquivar (soft-delete) — mantem o registro mas marca ativo=0.
+ *  Preferivel a cliente/delete por questao de sigilo OAB. */
+export async function archiveCliente(id: number): Promise<{ id: number }> {
+  return upsertCliente({ id, ativo: 0 } as ClienteInput & { id: number })
+}
+
+export async function unarchiveCliente(id: number): Promise<{ id: number }> {
+  return upsertCliente({ id, ativo: 1 } as ClienteInput & { id: number })
 }
 
 // --------------------------------------------------------------------------
