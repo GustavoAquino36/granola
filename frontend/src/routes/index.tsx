@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom"
 import { AppShell } from "@/components/layout/AppShell"
 import { AgoraPage } from "@/pages/AgoraPage"
+import { ClienteDetailPage } from "@/pages/ClienteDetailPage"
 import { ClientesPage } from "@/pages/ClientesPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { PlaceholderPage } from "@/pages/PlaceholderPage"
@@ -37,6 +38,10 @@ export const router = createBrowserRouter([
           {
             path: "/clientes",
             element: <ClientesPage />,
+          },
+          {
+            path: "/clientes/:id",
+            element: <ClienteDetailPage />,
           },
           {
             path: "/processos",
