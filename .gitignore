@@ -73,13 +73,10 @@ build/
 *.spec
 runtime/
 
-# ---- Node (para frontend-v2 futuro) ----
+# ---- Node / Vite / build artifacts ----
 node_modules/
 .vite/
-frontend-v2/dist/
-frontend-v2/node_modules/
-frontend-v2/.vite/
-frontend-v2/coverage/
+coverage/
 
 # ---- Marketing (videos grandes, redacted assets — permite so scripts .py/.js) ----
 marketing/video/**
