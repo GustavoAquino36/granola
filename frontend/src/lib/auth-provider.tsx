@@ -1,28 +1,24 @@
-import { createContext, useCallback, useContext, useMemo } from "react"
+import { useCallback, useMemo } from "react"
 import type { ReactNode } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { fetchMe, postLogin, postLogout } from "@/api/auth"
 import { ApiError } from "@/api/client"
+import {
+  AUTH_ME_KEY,
+  AuthContext,
+  type AuthContextValue,
+} from "./auth-context"
 import type { AuthUser } from "@/types/auth"
 
-interface AuthContextValue {
-  user: AuthUser | null
-  isAuthenticated: boolean
-  /** True enquanto estamos checando a sessao (primeira carga). */
-  isLoading: boolean
-  login: (username: string, password: string) => Promise<AuthUser>
-  logout: () => Promise<void>
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null)
-
-const ME_KEY = ["auth", "me"] as const
-
+/**
+ * Provider que expoe o estado de autenticacao via AuthContext.
+ * Deve ficar DENTRO do QueryClientProvider (usa useQuery/useMutation).
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
 
   const meQuery = useQuery<AuthUser | null>({
-    queryKey: ME_KEY,
+    queryKey: AUTH_ME_KEY,
     queryFn: async () => {
       try {
         const data = await fetchMe()
@@ -64,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: response.user.role,
         ambiente: "granola",
       }
-      queryClient.setQueryData(ME_KEY, user)
+      queryClient.setQueryData(AUTH_ME_KEY, user)
       return user
     },
     [loginMutation, queryClient]
@@ -76,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Backend fora do ar? Limpa sessao local de qualquer jeito.
     }
-    queryClient.setQueryData(ME_KEY, null)
+    queryClient.setQueryData(AUTH_ME_KEY, null)
     // Limpa todo o cache: evita que a proxima pessoa que logar veja
     // dados do usuario anterior num flash antes do refetch.
     queryClient.clear()
@@ -94,12 +90,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext)
-  if (!ctx) {
-    throw new Error("useAuth precisa estar dentro de <AuthProvider>")
-  }
-  return ctx
 }
