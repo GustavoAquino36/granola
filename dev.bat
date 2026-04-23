@@ -1,18 +1,24 @@
 @echo off
 REM ============================================================
 REM  Granola - Dev launcher
-REM  Sobe backend (Python :3458) + frontend (Vite :5173) em paralelo.
+REM  Sobe backend Python (:3458) + frontend Vite (:5173) em
+REM  duas janelas cmd separadas. Titulos identificaveis, logs
+REM  independentes, cada Ctrl+C/fechamento encerra seu proprio
+REM  processo sem derrubar o outro.
 REM
-REM  Se Windows Terminal (wt.exe) estiver disponivel (padrao no Windows 11),
-REM  abre UMA janela com 2 paneis split horizontal. Caso contrario, cai
-REM  num fallback com 2 terminais cmd classicos.
+REM  Quer rodar tudo numa janela so? Abra o Windows Terminal,
+REM  use Ctrl+Shift+D pra split horizontal, e rode os comandos
+REM  do README.md manualmente nos 2 paneis. (A tentativa de
+REM  automatizar isso num .bat esbarra no escaping de ; com
+REM  paths contendo espacos + acentos — nao vale a dor.)
 REM ============================================================
 
 title Granola - Dev launcher
 cd /d "%~dp0"
 
-REM ---------- Verifica pre-requisitos ----------
+REM ---------- Pre-requisitos ----------
 if not exist ".venv\Scripts\activate.bat" (
+  echo.
   echo [Granola] ERRO: .venv nao encontrado.
   echo.
   echo Rode o setup primeiro:
@@ -25,6 +31,7 @@ if not exist ".venv\Scripts\activate.bat" (
 )
 
 if not exist "frontend\node_modules" (
+  echo.
   echo [Granola] ERRO: frontend\node_modules nao encontrado.
   echo.
   echo Rode o setup do frontend primeiro:
@@ -35,18 +42,16 @@ if not exist "frontend\node_modules" (
   exit /b 1
 )
 
-REM ---------- Windows Terminal: 1 janela, 2 paneis ----------
-where wt >nul 2>&1
-if %errorlevel% equ 0 (
-  echo [Granola] Subindo backend + frontend em 1 janela do Windows Terminal...
-  wt new-tab --title "Granola backend :3458" -d "%~dp0" cmd /k ".venv\Scripts\activate.bat && python -m granola" ^; split-pane -H --title "Granola frontend :5173" -d "%~dp0frontend" cmd /k "npm run dev"
-  exit /b 0
-)
-
-REM ---------- Fallback: 2 terminais cmd classicos ----------
-echo [Granola] Windows Terminal nao encontrado. Abrindo 2 terminais classicos...
-start "Granola backend :3458" cmd /k ".venv\Scripts\activate.bat && python -m granola"
-start "Granola frontend :5173" cmd /k "cd frontend && npm run dev"
+REM ---------- Sobe backend + frontend em 2 janelas ----------
 echo.
-echo [Granola] Dois terminais abertos. Feche-os para encerrar o dev.
+echo [Granola] Abrindo backend (porta 3458) + frontend Vite (porta 5173)...
+echo           Acesse http://localhost:5173 no browser.
+echo           Feche as janelas de cmd pra encerrar cada servico.
+echo.
+
+start "Granola backend :3458" /d "%~dp0" cmd /k ".venv\Scripts\activate.bat && python -m granola"
+start "Granola frontend :5173" /d "%~dp0frontend" cmd /k "npm run dev"
+
+REM Pequena pausa pra voce ver o que aconteceu antes da janela fechar.
 timeout /t 3 /nobreak >nul
+exit /b 0
