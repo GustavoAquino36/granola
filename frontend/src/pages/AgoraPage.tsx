@@ -2,6 +2,7 @@ import { useMemo } from "react"
 import { Link } from "react-router-dom"
 import { Download, Plus } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
+import { AlertasCard } from "@/components/features/agora/AlertasCard"
 import { KpiGrid } from "@/components/features/agora/KpiGrid"
 import { ProximosPrazosCard } from "@/components/features/agora/ProximosPrazosCard"
 import { cn } from "@/lib/utils"
@@ -86,13 +87,7 @@ export function AgoraPage() {
       {/* ================= GRID PRINCIPAL ================= */}
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
         <ProximosPrazosCard />
-        {/* Alertas entra no proximo commit */}
-        <div className="rounded-card border border-dashed border-border bg-surface-alt p-5 text-[0.8125rem] text-muted">
-          <p className="font-sans text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted">
-            em construcao
-          </p>
-          <p className="mt-2">Alertas · prazos fatais, sync DataJud, backup.</p>
-        </div>
+        <AlertasCard />
       </div>
 
       {/* ================= EM CONSTRUCAO (resto da Fase 2A) ================= */}
