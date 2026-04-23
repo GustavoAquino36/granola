@@ -2,6 +2,7 @@ import { useMemo } from "react"
 import { Link } from "react-router-dom"
 import { Download, Plus } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
+import { KpiGrid } from "@/components/features/agora/KpiGrid"
 import { cn } from "@/lib/utils"
 
 /** Retorna "Bom dia" / "Boa tarde" / "Boa noite" conforme a hora local. */
@@ -76,66 +77,33 @@ export function AgoraPage() {
       </header>
 
       {/* ================= FILETE ================= */}
-      <div className="mb-10 h-px w-full bg-hairline" aria-hidden />
+      <div className="mb-8 h-px w-full bg-hairline" aria-hidden />
 
-      {/* ================= PLACEHOLDER HONESTO ================= */}
+      {/* ================= KPIs ================= */}
+      <KpiGrid />
+
+      {/* ================= EM CONSTRUCAO (resto da Fase 2A) ================= */}
       <section
         aria-labelledby="proxima-entrega"
-        className="rounded-card border border-border bg-surface p-8 shadow-1"
+        className="rounded-card border border-dashed border-border bg-surface-alt p-6"
       >
-        <p className="font-sans text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-dourado">
-          Próxima entrega · Fase 2
+        <p className="font-sans text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted">
+          Em construcao · continuacao da Fase 2A
         </p>
-        <h2
-          id="proxima-entrega"
-          className="font-display mt-2 text-2xl font-normal text-foreground"
-        >
-          O que vai aparecer aqui, em ordem.
-        </h2>
-        <ul className="mt-6 grid gap-3 text-sm text-muted md:grid-cols-2">
-          <ChecklistItem title="KPIs do dia" desc="prazos esta semana, processos ativos, clientes, a receber 30d" />
-          <ChecklistItem title="Próximos prazos" desc="tabela filtravel com CNJ, cliente, tipo, vencimento, status (fatal/alerta/ok)" />
-          <ChecklistItem title="Alertas" desc="prazos fatais, sincronizacoes pendentes, backup concluido" />
-          <ChecklistItem title="Atividade recente" desc="timeline de movimentacoes do dia vindas de DataJud, DJEN e acoes manuais" />
-          <ChecklistItem title="Calendário mini" desc="mes corrente com marcadores de eventos e prazos fatais" />
-          <ChecklistItem
-            title="Atalhos e busca Cmd+K"
-            desc="busca unificada processo/cliente/peça, atalhos do Brandbook Cap. 23"
-          />
+        <ul className="mt-3 grid gap-2 text-sm text-muted md:grid-cols-2">
+          <li>· Proximos prazos (tabela com filtros)</li>
+          <li>· Alertas (prazos fatais, sync, backup)</li>
+          <li>· Atividade recente (timeline de movimentacoes)</li>
+          <li>· Mini calendario com marcadores</li>
         </ul>
-
-        <p className="mt-8 border-t border-border pt-5 font-mono text-xs text-muted/80">
-          o backend ja expõe os endpoints /api/granola/stats, /publicacoes-datajud/status, /prazos, /movimentacoes.
-          <br />
-          falta ligar os hooks TanStack Query (em progresso).
-        </p>
       </section>
 
-      {/* ================= DEBUG CONTEXT ================= */}
+      {/* ================= DEBUG ================= */}
       {import.meta.env.DEV && (
         <p className="mt-8 text-center font-mono text-[0.7rem] uppercase tracking-[0.22em] text-muted/60">
           dev · logado como {user?.username} ({user?.role})
         </p>
       )}
     </div>
-  )
-}
-
-function ChecklistItem({ title, desc }: { title: string; desc: string }) {
-  return (
-    <li className="flex gap-3">
-      <span
-        className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-dourado/70"
-        aria-hidden
-      />
-      <div className="min-w-0">
-        <div className="font-sans text-sm font-medium text-foreground">
-          {title}
-        </div>
-        <div className="mt-0.5 font-sans text-[0.8125rem] text-muted">
-          {desc}
-        </div>
-      </div>
-    </li>
   )
 }
