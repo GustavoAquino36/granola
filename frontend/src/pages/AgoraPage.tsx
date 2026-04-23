@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context"
 import { AlertasCard } from "@/components/features/agora/AlertasCard"
 import { AtividadeRecenteCard } from "@/components/features/agora/AtividadeRecenteCard"
 import { KpiGrid } from "@/components/features/agora/KpiGrid"
+import { MiniCalendario } from "@/components/features/agora/MiniCalendario"
 import { ProximosPrazosCard } from "@/components/features/agora/ProximosPrazosCard"
 import { cn } from "@/lib/utils"
 
@@ -94,13 +95,7 @@ export function AgoraPage() {
       {/* ================= GRID SECUNDARIO ================= */}
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
         <AtividadeRecenteCard />
-        {/* Mini calendario entra no proximo commit */}
-        <div className="rounded-card border border-dashed border-border bg-surface-alt p-5 text-[0.8125rem] text-muted">
-          <p className="font-sans text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted">
-            em construcao
-          </p>
-          <p className="mt-2">Calendario mini do mes corrente com marcadores de compromissos e prazos fatais.</p>
-        </div>
+        <MiniCalendario />
       </div>
 
       {/* ================= DEBUG ================= */}
