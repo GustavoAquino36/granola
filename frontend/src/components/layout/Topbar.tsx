@@ -4,6 +4,7 @@ import { Bell, LogOut, Moon, Search, Sun, type LucideIcon } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useTheme } from "@/lib/theme"
 import { cn } from "@/lib/utils"
+import { initialsFrom } from "@/lib/format"
 
 /**
  * Mapa pathname-prefix -> label do breadcrumb.
@@ -130,13 +131,6 @@ function IconButton({ label, Icon }: { label: string; Icon: LucideIcon }) {
 }
 
 /* ========================================================================= */
-
-function initialsFrom(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return "?"
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-}
 
 function UserMenu() {
   const { user, logout } = useAuth()
