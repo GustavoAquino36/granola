@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import { Download, Plus } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { KpiGrid } from "@/components/features/agora/KpiGrid"
+import { ProximosPrazosCard } from "@/components/features/agora/ProximosPrazosCard"
 import { cn } from "@/lib/utils"
 
 /** Retorna "Bom dia" / "Boa tarde" / "Boa noite" conforme a hora local. */
@@ -82,17 +83,27 @@ export function AgoraPage() {
       {/* ================= KPIs ================= */}
       <KpiGrid />
 
+      {/* ================= GRID PRINCIPAL ================= */}
+      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
+        <ProximosPrazosCard />
+        {/* Alertas entra no proximo commit */}
+        <div className="rounded-card border border-dashed border-border bg-surface-alt p-5 text-[0.8125rem] text-muted">
+          <p className="font-sans text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted">
+            em construcao
+          </p>
+          <p className="mt-2">Alertas · prazos fatais, sync DataJud, backup.</p>
+        </div>
+      </div>
+
       {/* ================= EM CONSTRUCAO (resto da Fase 2A) ================= */}
       <section
         aria-labelledby="proxima-entrega"
-        className="rounded-card border border-dashed border-border bg-surface-alt p-6"
+        className="rounded-card border border-dashed border-border bg-surface-alt p-5"
       >
         <p className="font-sans text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted">
-          Em construcao · continuacao da Fase 2A
+          Proximo desta fase
         </p>
-        <ul className="mt-3 grid gap-2 text-sm text-muted md:grid-cols-2">
-          <li>· Proximos prazos (tabela com filtros)</li>
-          <li>· Alertas (prazos fatais, sync, backup)</li>
+        <ul className="mt-2 grid gap-1.5 text-sm text-muted md:grid-cols-2">
           <li>· Atividade recente (timeline de movimentacoes)</li>
           <li>· Mini calendario com marcadores</li>
         </ul>
