@@ -1,12 +1,36 @@
 import { useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, Archive, Mail, MapPin, Pencil, Phone } from "lucide-react"
-import { fetchClienteById, queryKeys } from "@/api/granola"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  ArrowLeft,
+  Archive,
+  ArchiveRestore,
+  Loader2,
+  Mail,
+  MapPin,
+  Pencil,
+  Phone,
+} from "lucide-react"
+import {
+  archiveCliente,
+  fetchClienteById,
+  queryKeys,
+  unarchiveCliente,
+} from "@/api/granola"
 import type { ClienteDetail, ClienteProcessoSummary } from "@/types/domain"
 import { formatBRL, formatCpfCnpj, initialsFrom, truncate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { ClienteFormDialog } from "@/components/features/clientes/ClienteFormDialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -14,14 +38,31 @@ import { Skeleton } from "@/components/ui/skeleton"
 export function ClienteDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const numId = Number(id)
   const valid = Number.isFinite(numId) && numId > 0
   const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false)
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: queryKeys.cliente(numId),
     queryFn: () => fetchClienteById(numId),
     enabled: valid,
+  })
+
+  const archiveMutation = useMutation({
+    mutationFn: async () => {
+      if (!data) throw new Error("Cliente nao carregado")
+      return data.ativo === 1
+        ? archiveCliente(data.id)
+        : unarchiveCliente(data.id)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["granola", "clientes"] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.cliente(numId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats })
+      setShowArchiveDialog(false)
+    },
   })
 
   if (!valid) {
@@ -66,6 +107,7 @@ export function ClienteDetailPage() {
           <DetailHead
             cliente={data}
             onEdit={() => setShowEditDialog(true)}
+            onToggleArchive={() => setShowArchiveDialog(true)}
           />
 
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -79,6 +121,66 @@ export function ClienteDetailPage() {
             onOpenChange={setShowEditDialog}
             cliente={data}
           />
+
+          <AlertDialog
+            open={showArchiveDialog}
+            onOpenChange={setShowArchiveDialog}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="font-display text-xl font-normal">
+                  {data.ativo === 1
+                    ? "Arquivar este cliente?"
+                    : "Reativar este cliente?"}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {data.ativo === 1 ? (
+                    <>
+                      O cliente <strong>{data.nome}</strong> deixa de aparecer
+                      na lista de ativos, mas <strong>não é apagado</strong>.
+                      Processos e historico permanecem intactos. Voce pode
+                      reativar a qualquer momento em <em>Arquivados</em>.
+                    </>
+                  ) : (
+                    <>
+                      O cliente <strong>{data.nome}</strong> volta pra lista
+                      de ativos e pode receber novos processos e lancamentos
+                      normalmente.
+                    </>
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              {archiveMutation.isError && (
+                <p className="rounded-card border-l-2 border-erro bg-erro/8 px-3 py-2 text-sm text-erro">
+                  {archiveMutation.error instanceof Error
+                    ? archiveMutation.error.message
+                    : "Nao foi possivel concluir."}
+                </p>
+              )}
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={archiveMutation.isPending}>
+                  Cancelar
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => {
+                    e.preventDefault()
+                    archiveMutation.mutate()
+                  }}
+                  disabled={archiveMutation.isPending}
+                  className={cn(
+                    data.ativo === 1
+                      ? "bg-erro text-marfim hover:bg-erro/90"
+                      : "bg-dourado text-tinta hover:bg-dourado-claro"
+                  )}
+                >
+                  {archiveMutation.isPending && (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  )}
+                  {data.ativo === 1 ? "Arquivar" : "Reativar"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </>
       )}
     </div>
@@ -92,9 +194,11 @@ export function ClienteDetailPage() {
 function DetailHead({
   cliente,
   onEdit,
+  onToggleArchive,
 }: {
   cliente: ClienteDetail
   onEdit: () => void
+  onToggleArchive: () => void
 }) {
   const inativo = cliente.ativo === 0
   return (
@@ -175,13 +279,19 @@ function DetailHead({
         <Button
           variant="ghost"
           size="sm"
-          className="gap-1.5 rounded-card text-muted hover:text-erro"
-          onClick={() => {
-            // TODO: AlertDialog de confirmacao (commit 2B.5)
-            window.alert("Arquivar chega no commit 2B.5.")
-          }}
+          className={cn(
+            "gap-1.5 rounded-card",
+            inativo
+              ? "text-sucesso hover:bg-sucesso/10 hover:text-sucesso"
+              : "text-muted hover:bg-erro/10 hover:text-erro"
+          )}
+          onClick={onToggleArchive}
         >
-          <Archive className="h-3 w-3" strokeWidth={1.75} />
+          {inativo ? (
+            <ArchiveRestore className="h-3 w-3" strokeWidth={1.75} />
+          ) : (
+            <Archive className="h-3 w-3" strokeWidth={1.75} />
+          )}
           {inativo ? "Reativar" : "Arquivar"}
         </Button>
       </div>

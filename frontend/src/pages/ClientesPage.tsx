@@ -1,13 +1,46 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { useQuery } from "@tanstack/react-query"
-import { Download, MoreHorizontal, Plus, Search, UserPlus } from "lucide-react"
-import { fetchClientes, queryKeys } from "@/api/granola"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  Archive,
+  ArchiveRestore,
+  Download,
+  ExternalLink,
+  Loader2,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Search,
+  UserPlus,
+} from "lucide-react"
+import {
+  archiveCliente,
+  fetchClientes,
+  queryKeys,
+  unarchiveCliente,
+} from "@/api/granola"
 import type { Cliente } from "@/types/domain"
 import { formatCpfCnpj, formatDate, truncate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { ClienteFormDialog } from "@/components/features/clientes/ClienteFormDialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Card, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -25,10 +58,15 @@ type FiltroAtivo = "ativos" | "inativos"
 
 export function ClientesPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [busca, setBusca] = useState("")
   const [tipo, setTipo] = useState<FiltroTipo>("todos")
   const [ativo, setAtivo] = useState<FiltroAtivo>("ativos")
   const [showNewDialog, setShowNewDialog] = useState(false)
+  /** Quando set, abre ClienteFormDialog em modo edit com esse cliente. */
+  const [editingCliente, setEditingCliente] = useState<Cliente | null>(null)
+  /** Quando set, abre AlertDialog pra arquivar/reativar esse cliente. */
+  const [archiveTarget, setArchiveTarget] = useState<Cliente | null>(null)
 
   const params = useMemo(
     () => ({
@@ -46,6 +84,20 @@ export function ClientesPage() {
   })
 
   const clientes = data?.clientes ?? []
+
+  const archiveMutation = useMutation({
+    mutationFn: async (target: Cliente) => {
+      return target.ativo === 1
+        ? archiveCliente(target.id)
+        : unarchiveCliente(target.id)
+    },
+    onSuccess: (_data, target) => {
+      queryClient.invalidateQueries({ queryKey: ["granola", "clientes"] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.cliente(target.id) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats })
+      setArchiveTarget(null)
+    },
+  })
 
   return (
     <div className="px-8 py-8 lg:px-10 lg:py-10">
@@ -171,6 +223,8 @@ export function ClientesPage() {
                   key={c.id}
                   cliente={c}
                   onOpen={() => navigate(`/clientes/${c.id}`)}
+                  onEdit={() => setEditingCliente(c)}
+                  onToggleArchive={() => setArchiveTarget(c)}
                 />
               ))}
             </TableBody>
@@ -178,12 +232,82 @@ export function ClientesPage() {
         )}
       </Card>
 
-      {/* Dialog de criar cliente */}
+      {/* Dialog de criar cliente (novo) */}
       <ClienteFormDialog
         open={showNewDialog}
         onOpenChange={setShowNewDialog}
         onSaved={(id) => navigate(`/clientes/${id}`)}
       />
+
+      {/* Dialog de editar cliente (via acao da lista) */}
+      <ClienteFormDialog
+        open={editingCliente !== null}
+        onOpenChange={(open) => !open && setEditingCliente(null)}
+        cliente={editingCliente}
+      />
+
+      {/* AlertDialog de arquivar/reativar (via acao da lista) */}
+      <AlertDialog
+        open={archiveTarget !== null}
+        onOpenChange={(open) => !open && setArchiveTarget(null)}
+      >
+        <AlertDialogContent>
+          {archiveTarget && (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="font-display text-xl font-normal">
+                  {archiveTarget.ativo === 1
+                    ? "Arquivar este cliente?"
+                    : "Reativar este cliente?"}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {archiveTarget.ativo === 1 ? (
+                    <>
+                      <strong>{archiveTarget.nome}</strong> sai da lista de
+                      ativos, mas <strong>não é apagado</strong>. Processos e
+                      historico permanecem intactos.
+                    </>
+                  ) : (
+                    <>
+                      <strong>{archiveTarget.nome}</strong> volta pra lista de
+                      ativos e pode receber novos lancamentos.
+                    </>
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              {archiveMutation.isError && (
+                <p className="rounded-card border-l-2 border-erro bg-erro/8 px-3 py-2 text-sm text-erro">
+                  {archiveMutation.error instanceof Error
+                    ? archiveMutation.error.message
+                    : "Nao foi possivel concluir."}
+                </p>
+              )}
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={archiveMutation.isPending}>
+                  Cancelar
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => {
+                    e.preventDefault()
+                    archiveMutation.mutate(archiveTarget)
+                  }}
+                  disabled={archiveMutation.isPending}
+                  className={cn(
+                    archiveTarget.ativo === 1
+                      ? "bg-erro text-marfim hover:bg-erro/90"
+                      : "bg-dourado text-tinta hover:bg-dourado-claro"
+                  )}
+                >
+                  {archiveMutation.isPending && (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  )}
+                  {archiveTarget.ativo === 1 ? "Arquivar" : "Reativar"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
@@ -193,9 +317,13 @@ export function ClientesPage() {
 function ClienteRow({
   cliente,
   onOpen,
+  onEdit,
+  onToggleArchive,
 }: {
   cliente: Cliente
   onOpen: () => void
+  onEdit: () => void
+  onToggleArchive: () => void
 }) {
   return (
     <TableRow
@@ -244,17 +372,49 @@ function ClienteRow({
         </span>
       </TableCell>
       <TableCell className="py-3 pl-3 pr-5 text-right">
-        <button
-          type="button"
-          aria-label="Mais acoes"
-          onClick={(e) => {
-            e.stopPropagation()
-            // TODO: dropdown com "Ver detalhes" / "Editar" / "Arquivar" (2B.5)
-          }}
-          className="grid h-7 w-7 place-items-center rounded-pill bg-transparent text-muted transition-colors hover:bg-dourado/10 hover:text-foreground"
-        >
-          <MoreHorizontal className="h-4 w-4" strokeWidth={1.75} />
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Mais acoes"
+              onClick={(e) => e.stopPropagation()}
+              className="grid h-7 w-7 place-items-center rounded-pill bg-transparent text-muted transition-colors hover:bg-dourado/10 hover:text-foreground"
+            >
+              <MoreHorizontal className="h-4 w-4" strokeWidth={1.75} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="min-w-[180px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DropdownMenuItem onClick={onOpen}>
+              <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} />
+              Abrir detalhes
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onEdit}>
+              <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} />
+              Editar
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant={cliente.ativo === 1 ? "destructive" : "default"}
+              onClick={onToggleArchive}
+            >
+              {cliente.ativo === 1 ? (
+                <>
+                  <Archive className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Arquivar
+                </>
+              ) : (
+                <>
+                  <ArchiveRestore className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Reativar
+                </>
+              )}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </TableCell>
     </TableRow>
   )
