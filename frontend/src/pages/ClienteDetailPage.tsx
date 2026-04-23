@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
 import { ArrowLeft, Archive, Mail, MapPin, Pencil, Phone } from "lucide-react"
@@ -5,6 +6,7 @@ import { fetchClienteById, queryKeys } from "@/api/granola"
 import type { ClienteDetail, ClienteProcessoSummary } from "@/types/domain"
 import { formatBRL, formatCpfCnpj, initialsFrom, truncate } from "@/lib/format"
 import { cn } from "@/lib/utils"
+import { ClienteFormDialog } from "@/components/features/clientes/ClienteFormDialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -14,6 +16,7 @@ export function ClienteDetailPage() {
   const navigate = useNavigate()
   const numId = Number(id)
   const valid = Number.isFinite(numId) && numId > 0
+  const [showEditDialog, setShowEditDialog] = useState(false)
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: queryKeys.cliente(numId),
@@ -60,13 +63,22 @@ export function ClienteDetailPage() {
         </div>
       ) : (
         <>
-          <DetailHead cliente={data} />
+          <DetailHead
+            cliente={data}
+            onEdit={() => setShowEditDialog(true)}
+          />
 
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
             <ResumoFinanceiroCard cliente={data} />
             <ProcessosVinculadosCard cliente={data} />
             <UltimaInteracaoCard cliente={data} />
           </div>
+
+          <ClienteFormDialog
+            open={showEditDialog}
+            onOpenChange={setShowEditDialog}
+            cliente={data}
+          />
         </>
       )}
     </div>
@@ -77,7 +89,13 @@ export function ClienteDetailPage() {
 // Detail head — avatar + nome + tags + meta + actions
 // --------------------------------------------------------------------------
 
-function DetailHead({ cliente }: { cliente: ClienteDetail }) {
+function DetailHead({
+  cliente,
+  onEdit,
+}: {
+  cliente: ClienteDetail
+  onEdit: () => void
+}) {
   const inativo = cliente.ativo === 0
   return (
     <div
@@ -149,10 +167,7 @@ function DetailHead({ cliente }: { cliente: ClienteDetail }) {
           variant="outline"
           size="sm"
           className="gap-1.5 rounded-card"
-          onClick={() => {
-            // TODO: abrir Dialog em modo edit (commit 2B.4)
-            window.alert("Edicao chega no commit 2B.4.")
-          }}
+          onClick={onEdit}
         >
           <Pencil className="h-3 w-3" strokeWidth={1.75} />
           Editar

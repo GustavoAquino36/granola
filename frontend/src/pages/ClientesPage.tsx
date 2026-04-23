@@ -6,6 +6,7 @@ import { fetchClientes, queryKeys } from "@/api/granola"
 import type { Cliente } from "@/types/domain"
 import { formatCpfCnpj, formatDate, truncate } from "@/lib/format"
 import { cn } from "@/lib/utils"
+import { ClienteFormDialog } from "@/components/features/clientes/ClienteFormDialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -27,6 +28,7 @@ export function ClientesPage() {
   const [busca, setBusca] = useState("")
   const [tipo, setTipo] = useState<FiltroTipo>("todos")
   const [ativo, setAtivo] = useState<FiltroAtivo>("ativos")
+  const [showNewDialog, setShowNewDialog] = useState(false)
 
   const params = useMemo(
     () => ({
@@ -71,10 +73,7 @@ export function ClientesPage() {
               "gap-1.5 rounded-card bg-dourado text-tinta hover:bg-dourado-claro",
               "hover:shadow-[0_4px_12px_-4px_rgba(198,158,91,0.6)]"
             )}
-            onClick={() => {
-              // TODO: abrir Dialog de criar cliente (entra no commit 2B.4)
-              window.alert("Form de criar cliente chega na proxima etapa (2B.4).")
-            }}
+            onClick={() => setShowNewDialog(true)}
           >
             <Plus className="h-3.5 w-3.5" strokeWidth={2} />
             Adicionar cliente
@@ -178,6 +177,13 @@ export function ClientesPage() {
           </Table>
         )}
       </Card>
+
+      {/* Dialog de criar cliente */}
+      <ClienteFormDialog
+        open={showNewDialog}
+        onOpenChange={setShowNewDialog}
+        onSaved={(id) => navigate(`/clientes/${id}`)}
+      />
     </div>
   )
 }
