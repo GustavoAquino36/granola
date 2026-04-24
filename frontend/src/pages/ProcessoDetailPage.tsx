@@ -52,6 +52,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MovimentacoesCard } from "@/components/features/processos/MovimentacoesCard"
+import { DocumentosCard } from "@/components/features/documentos/DocumentosCard"
 import { ProcessoFormDialog } from "@/components/features/processos/ProcessoFormDialog"
 
 export function ProcessoDetailPage() {
@@ -148,7 +149,15 @@ export function ProcessoDetailPage() {
 
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
             <PartesCard partes={data.partes} />
-            <PrazosVinculadosCard prazos={data.prazos} processoId={data.id} />
+            <PrazosVinculadosCard prazos={data.prazos} />
+          </div>
+
+          <div className="mt-5">
+            <DocumentosCard
+              documentos={data.documentos ?? []}
+              processoId={data.id}
+              clienteId={data.cliente_id}
+            />
           </div>
 
           <ProcessoFormDialog
@@ -613,10 +622,8 @@ function ParteGrupo({ titulo, partes }: { titulo: string; partes: Parte[] }) {
 
 function PrazosVinculadosCard({
   prazos,
-  processoId,
 }: {
   prazos: Prazo[]
-  processoId: number
 }) {
   const pendentes = prazos.filter((p) => p.status === "pendente")
   const concluidos = prazos.filter((p) => p.status === "concluido").length
@@ -645,7 +652,7 @@ function PrazosVinculadosCard({
             {pendentes.length > 4 && (
               <li className="border-t border-border px-5 py-2.5 text-center">
                 <Link
-                  to={`/agenda?processo=${processoId}`}
+                  to="/prazos"
                   className="text-[0.8125rem] font-medium text-dourado underline-offset-4 hover:underline"
                 >
                   Ver todos os {pendentes.length} prazos
