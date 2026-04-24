@@ -4,6 +4,7 @@ import { AgoraPage } from "@/pages/AgoraPage"
 import { ClienteDetailPage } from "@/pages/ClienteDetailPage"
 import { ClientesPage } from "@/pages/ClientesPage"
 import { DocumentosPage } from "@/pages/DocumentosPage"
+import { FinanceiroPage } from "@/pages/FinanceiroPage"
 import { KanbanPage } from "@/pages/KanbanPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { PlaceholderPage } from "@/pages/PlaceholderPage"
@@ -74,7 +75,17 @@ export const router = createBrowserRouter([
           },
           {
             path: "/financeiro",
-            element: <PlaceholderPage title="Financeiro" phase={5} />,
+            element: <FinanceiroPage />,
+          },
+          {
+            path: "/gastos",
+            element: (
+              <PlaceholderPage
+                title="Gastos sócios"
+                phase={6}
+                hint="Squad-only — gestão de gastos pessoais por sócio. Habilitado após o lançamento da SKU Squad."
+              />
+            ),
           },
           {
             path: "/modelos",

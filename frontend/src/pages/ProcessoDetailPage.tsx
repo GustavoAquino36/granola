@@ -53,6 +53,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { MovimentacoesCard } from "@/components/features/processos/MovimentacoesCard"
 import { DocumentosCard } from "@/components/features/documentos/DocumentosCard"
+import { FinanceiroCard } from "@/components/features/financeiro/FinanceiroCard"
 import { ProcessoFormDialog } from "@/components/features/processos/ProcessoFormDialog"
 
 export function ProcessoDetailPage() {
@@ -150,6 +151,14 @@ export function ProcessoDetailPage() {
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
             <PartesCard partes={data.partes} />
             <PrazosVinculadosCard prazos={data.prazos} />
+          </div>
+
+          <div className="mt-5">
+            <FinanceiroCard
+              lancamentos={data.financeiro ?? []}
+              processoId={data.id}
+              clienteId={data.cliente_id}
+            />
           </div>
 
           <div className="mt-5">
