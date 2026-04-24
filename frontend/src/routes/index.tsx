@@ -3,14 +3,17 @@ import { AppShell } from "@/components/layout/AppShell"
 import { AgoraPage } from "@/pages/AgoraPage"
 import { ClienteDetailPage } from "@/pages/ClienteDetailPage"
 import { ClientesPage } from "@/pages/ClientesPage"
+import { DocumentosPage } from "@/pages/DocumentosPage"
+import { KanbanPage } from "@/pages/KanbanPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { PlaceholderPage } from "@/pages/PlaceholderPage"
+import { PrazosPage } from "@/pages/PrazosPage"
 import { ProcessoDetailPage } from "@/pages/ProcessoDetailPage"
 import { ProcessosPage } from "@/pages/ProcessosPage"
 import { ProtectedRoute } from "./ProtectedRoute"
 
 /**
- * Roteamento oficial do frontend-v2.
+ * Roteamento oficial do frontend.
  *
  * Topologia:
  *  - `/` redireciona para `/login`.
@@ -52,6 +55,18 @@ export const router = createBrowserRouter([
           {
             path: "/processos/:id",
             element: <ProcessoDetailPage />,
+          },
+          {
+            path: "/kanban",
+            element: <KanbanPage />,
+          },
+          {
+            path: "/prazos",
+            element: <PrazosPage />,
+          },
+          {
+            path: "/documentos",
+            element: <DocumentosPage />,
           },
           {
             path: "/agenda",

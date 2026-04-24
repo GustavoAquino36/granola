@@ -174,4 +174,41 @@
   .font-display {
     font-feature-settings: "dlig", "liga";
   }
+
+  /* Respeito por usuarios com prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* =========================================================================
+   MICRO-ANIMACOES — sutis, nunca overdo (regra Brandbook v2)
+   ========================================================================= */
+@layer utilities {
+  /* Pulse discreto pra alertas vencidos/urgentes — chama atencao sem agredir */
+  @keyframes deadline-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.78; }
+  }
+  .animate-deadline-pulse {
+    animation: deadline-pulse 2.4s var(--ease-valerius) infinite;
+  }
+
+  /* Hover lift padrao Valerius — usado em cards interativos (kanban etc) */
+  .hover-lift {
+    transition:
+      transform 200ms var(--ease-valerius),
+      box-shadow 200ms var(--ease-valerius),
+      border-color 200ms var(--ease-valerius);
+  }
+  .hover-lift:hover {
+    transform: translateY(-1px);
+  }
 }

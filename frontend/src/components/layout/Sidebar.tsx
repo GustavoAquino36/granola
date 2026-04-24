@@ -2,9 +2,12 @@ import { NavLink } from "react-router-dom"
 import {
   Calendar,
   CircleDollarSign,
+  Clock,
   FileText,
+  Files,
   FolderOpen,
   Home,
+  KanbanSquare,
   Settings,
   Users,
   type LucideIcon,
@@ -30,6 +33,8 @@ const SECTIONS: NavSection[] = [
       { to: "/agora", icon: Home, label: "Agora", badge: 7 },
       { to: "/clientes", icon: Users, label: "Clientes" },
       { to: "/processos", icon: FolderOpen, label: "Processos" },
+      { to: "/kanban", icon: KanbanSquare, label: "Kanban" },
+      { to: "/prazos", icon: Clock, label: "Prazos" },
       { to: "/agenda", icon: Calendar, label: "Agenda" },
       { to: "/financeiro", icon: CircleDollarSign, label: "Financeiro" },
     ],
@@ -37,6 +42,7 @@ const SECTIONS: NavSection[] = [
   {
     label: "Suporte",
     items: [
+      { to: "/documentos", icon: Files, label: "Documentos" },
       { to: "/modelos", icon: FileText, label: "Modelos" },
       { to: "/config", icon: Settings, label: "Configurações" },
     ],
