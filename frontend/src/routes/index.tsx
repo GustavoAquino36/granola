@@ -5,6 +5,7 @@ import { ClienteDetailPage } from "@/pages/ClienteDetailPage"
 import { ClientesPage } from "@/pages/ClientesPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { PlaceholderPage } from "@/pages/PlaceholderPage"
+import { ProcessoDetailPage } from "@/pages/ProcessoDetailPage"
 import { ProcessosPage } from "@/pages/ProcessosPage"
 import { ProtectedRoute } from "./ProtectedRoute"
 
@@ -50,7 +51,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "/processos/:id",
-            element: <PlaceholderPage title="Processo :id" phase={3} />,
+            element: <ProcessoDetailPage />,
           },
           {
             path: "/agenda",
