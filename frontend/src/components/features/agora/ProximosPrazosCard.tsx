@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query"
 import { Filter, MoreHorizontal } from "lucide-react"
 import { fetchPrazos, queryKeys } from "@/api/granola"
 import type { Prazo } from "@/types/domain"
-import { describeDeadline, formatCNJ, formatShortDate, truncate } from "@/lib/format"
+import { formatCNJ, formatShortDate, truncate } from "@/lib/format"
 import { cn } from "@/lib/utils"
+import { DeadlinePill } from "@/components/shared/DeadlinePill"
 import { Card, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -140,7 +141,6 @@ export function ProximosPrazosCard() {
 // --------------------------------------------------------------------------
 
 function PrazoRow({ prazo }: { prazo: Prazo }) {
-  const deadline = describeDeadline(prazo.data_vencimento)
   return (
     <TableRow
       className="cursor-pointer border-border hover:bg-dourado/5"
@@ -168,38 +168,9 @@ function PrazoRow({ prazo }: { prazo: Prazo }) {
         {formatShortDate(prazo.data_vencimento)}
       </TableCell>
       <TableCell className="py-3 pl-3 pr-5">
-        <StatusTag status={deadline.status} label={deadline.label} />
+        <DeadlinePill data={prazo.data_vencimento} />
       </TableCell>
     </TableRow>
-  )
-}
-
-function StatusTag({
-  status,
-  label,
-}: {
-  status: ReturnType<typeof describeDeadline>["status"]
-  label: string
-}) {
-  const map = {
-    vencido: { bg: "bg-erro/12", fg: "text-erro", dot: "bg-erro" },
-    hoje: { bg: "bg-erro/10", fg: "text-erro", dot: "bg-erro" },
-    urgente: { bg: "bg-erro/10", fg: "text-erro", dot: "bg-erro" },
-    proximo: { bg: "bg-alerta/12", fg: "text-alerta", dot: "bg-alerta" },
-    ok: { bg: "bg-sucesso/12", fg: "text-sucesso", dot: "bg-sucesso" },
-  }
-  const style = map[status]
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-pill px-2.5 py-1 text-[0.7rem] font-semibold",
-        style.bg,
-        style.fg
-      )}
-    >
-      <span className={cn("h-1.5 w-1.5 rounded-full", style.dot)} aria-hidden />
-      {label}
-    </span>
   )
 }
 
