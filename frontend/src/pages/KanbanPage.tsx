@@ -19,7 +19,7 @@ import {
   moveProcessoKanban,
   queryKeys,
 } from "@/api/granola"
-import type { KanbanCard, KanbanColuna } from "@/types/domain"
+import type { KanbanCard, KanbanColuna, KanbanResponse } from "@/types/domain"
 import { formatCNJ, truncate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -61,6 +61,15 @@ export function KanbanPage() {
     useSensor(KeyboardSensor)
   )
 
+  /**
+   * Move otimisticamente: ao soltar, atualizo o cache local IMEDIATAMENTE
+   * pra que o card ja apareca na coluna destino. Assim o dropAnimation
+   * default do dnd-kit (que anima do ponto do cursor ate a posicao final
+   * do draggable com mesmo id) consegue achar o destino correto e a
+   * animacao toca no sentido certo (cursor → destino).
+   *
+   * Se a mutation falhar, invalida o cache pra reverter.
+   */
   const moveMutation = useMutation({
     mutationFn: ({
       processoId,
@@ -69,8 +78,12 @@ export function KanbanPage() {
       processoId: number
       coluna: string
     }) => moveProcessoKanban(processoId, coluna),
-    onSuccess: () => {
+    onError: () => {
+      // Reverte o optimistic update
       queryClient.invalidateQueries({ queryKey: queryKeys.kanban })
+    },
+    onSuccess: () => {
+      // Refresca processos pra refletir a nova kanban_coluna em outras telas
       queryClient.invalidateQueries({ queryKey: ["granola", "processos"] })
     },
   })
@@ -87,6 +100,33 @@ export function KanbanPage() {
     const targetColuna = String(over.id)
     const fromColuna = cardById.get(processoId)?.coluna.key
     if (!fromColuna || fromColuna === targetColuna) return
+
+    // Optimistic update SINCRONO — antes de chamar o backend.
+    // Move o card de fromColuna pra targetColuna no cache do TanStack
+    // pra que o React renderize o destino imediatamente. O dropAnimation
+    // do dnd-kit detecta o draggable na nova posicao e anima ate la.
+    queryClient.setQueryData<KanbanResponse>(queryKeys.kanban, (prev) => {
+      if (!prev) return prev
+      let movedCard: KanbanCard | undefined
+      const colunasSemCard = prev.colunas.map((col) => {
+        if (col.key !== fromColuna) return col
+        const idx = col.cards.findIndex((c) => c.id === processoId)
+        if (idx < 0) return col
+        movedCard = col.cards[idx]
+        return { ...col, cards: col.cards.filter((c) => c.id !== processoId) }
+      })
+      if (!movedCard) return prev
+      const next = { ...movedCard, kanban_coluna: targetColuna }
+      return {
+        ...prev,
+        colunas: colunasSemCard.map((col) =>
+          col.key === targetColuna
+            ? { ...col, cards: [next, ...col.cards] }
+            : col
+        ),
+      }
+    })
+
     moveMutation.mutate({ processoId, coluna: targetColuna })
   }
 
@@ -155,7 +195,7 @@ export function KanbanPage() {
               ))}
             </div>
 
-            <DragOverlay dropAnimation={null}>
+            <DragOverlay>
               {activeId !== null && cardById.has(activeId) ? (
                 <CardView card={cardById.get(activeId)!.card} dragging />
               ) : null}
