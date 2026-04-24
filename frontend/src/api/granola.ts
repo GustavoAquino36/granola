@@ -205,6 +205,102 @@ export async function fetchColetaLog(since: number) {
 }
 
 // --------------------------------------------------------------------------
+// Coleta DJEN (por OAB) — mesmo padrao de polling/log do DataJud
+// --------------------------------------------------------------------------
+
+export async function startColetaDjen() {
+  return apiPost<{ status: "iniciada"; msg: string }>(
+    "/api/granola/publicacoes/coletar-djen"
+  )
+}
+
+export async function fetchColetaDjenStatus() {
+  return apiGet<{
+    ultima_coleta: string | null
+    resumo: {
+      total: number
+      elegiveis: number
+      oabs_consultadas: number
+      consultados: number
+      com_novidade: number
+      novas_movimentacoes: Array<{
+        processo_id: number
+        numero_cnj: string
+        titulo: string
+        data: string
+        descricao: string
+        hash_djen: string | null
+        link: string | null
+      }>
+      nao_encontrados: Array<{
+        processo_id: number
+        numero_cnj: string
+        titulo: string
+      }>
+      erros: string[]
+      inicio: string
+      fim: string | null
+      modo: string | null
+    } | null
+  }>("/api/granola/publicacoes-djen/status")
+}
+
+// --------------------------------------------------------------------------
+// Verificacao manual (Selenium e-SAJ + PJe pros faltantes da ultima DataJud)
+// --------------------------------------------------------------------------
+
+export interface VerificacaoManualResponse {
+  status: "iniciada" | "vazio" | "sem_cobertura"
+  msg: string
+  ignorados?: Array<{ processo_id: number; numero_cnj: string }>
+}
+
+/** Dispara Selenium e-SAJ+PJe em sequencia pros processos que a ultima
+ *  coleta DataJud nao conseguiu resolver. Requer Chromium aberto no CDP 9222
+ *  com sessao logada nos tribunais + certificado digital. So funciona na
+ *  maquina do advogado em producao. */
+export async function startVerificacaoManual() {
+  return apiPost<VerificacaoManualResponse>(
+    "/api/granola/publicacoes/verificacao-manual"
+  )
+}
+
+// --------------------------------------------------------------------------
+// Tratamento de publicacoes (marcar visto / pendente / criar prazo)
+// --------------------------------------------------------------------------
+
+export async function marcarMovVista(movId: number) {
+  return apiPost<{ status: "ok" }>(
+    "/api/granola/publicacao/marcar-vista",
+    { mov_id: movId }
+  )
+}
+
+export async function marcarMovPendente(movId: number) {
+  return apiPost<{ status: "ok" }>(
+    "/api/granola/publicacao/marcar-pendente",
+    { mov_id: movId }
+  )
+}
+
+export interface CriarPrazoDaMovInput {
+  mov_id: number
+  titulo: string
+  data_vencimento: string
+  prioridade?: "alta" | "media" | "normal" | "baixa"
+  tipo?: string
+  descricao?: string
+}
+
+/** Cria um prazo a partir de uma movimentacao + marca a mov como tratamento='prazo'. */
+export async function criarPrazoDaMov(input: CriarPrazoDaMovInput) {
+  return apiPost<{ status: "ok"; prazo_id: number }>(
+    "/api/granola/publicacao/criar-prazo",
+    input
+  )
+}
+
+// --------------------------------------------------------------------------
 // Agenda — /api/granola/agenda?mes=YYYY-MM&tipo=
 // --------------------------------------------------------------------------
 export interface ListarAgendaParams {
@@ -238,6 +334,7 @@ export const queryKeys = {
   agenda: (params: ListarAgendaParams = {}) =>
     ["granola", "agenda", params] as const,
   coletaDatajudStatus: ["granola", "coleta", "datajud", "status"] as const,
+  coletaDjenStatus: ["granola", "coleta", "djen", "status"] as const,
   coletaLog: (since: number) =>
     ["granola", "coleta", "log", since] as const,
 }

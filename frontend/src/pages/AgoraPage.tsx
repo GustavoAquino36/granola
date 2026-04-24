@@ -7,6 +7,7 @@ import { AtividadeRecenteCard } from "@/components/features/agora/AtividadeRecen
 import { KpiGrid } from "@/components/features/agora/KpiGrid"
 import { MiniCalendario } from "@/components/features/agora/MiniCalendario"
 import { ProximosPrazosCard } from "@/components/features/agora/ProximosPrazosCard"
+import { PublicacoesSemRetornoCard } from "@/components/features/agora/PublicacoesSemRetornoCard"
 import { cn } from "@/lib/utils"
 
 /** Retorna "Bom dia" / "Boa tarde" / "Boa noite" conforme a hora local. */
@@ -96,6 +97,11 @@ export function AgoraPage() {
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
         <AtividadeRecenteCard />
         <MiniCalendario />
+      </div>
+
+      {/* ================= PUBLICACOES SEM RETORNO ================= */}
+      <div className="mb-6">
+        <PublicacoesSemRetornoCard />
       </div>
 
       {/* ================= DEBUG ================= */}
