@@ -1,6 +1,7 @@
 import { apiGet, apiPost } from "./client"
 import type {
   AgendaEvent,
+  AgendaInput,
   ClienteDetail,
   ClienteInput,
   ClientesResponse,
@@ -10,6 +11,9 @@ import type {
   DocumentosResponse,
   FinanceiroInput,
   FinanceiroResponse,
+  GcalCalendar,
+  GcalStatus,
+  GcalSyncStats,
   KanbanResponse,
   MovimentacaoInput,
   ParteInput,
@@ -340,6 +344,59 @@ export async function fetchAgenda(params: ListarAgendaParams = {}) {
   return apiGet<AgendaResponse>(`/api/granola/agenda${suffix}`)
 }
 
+/** POST /api/granola/agenda/upsert — cria (sem id) ou atualiza (com id).
+ *  Se gcal estiver autenticado, faz auto-push pro Google em background. */
+export async function upsertAgenda(
+  input: AgendaInput & { id?: number }
+): Promise<{ id: number }> {
+  return apiPost<{ id: number; status: "ok" }>(
+    "/api/granola/agenda/upsert",
+    input
+  )
+}
+
+/** POST /api/granola/agenda/status — muda status do evento. */
+export async function updateAgendaStatus(id: number, status: string) {
+  return apiPost<{ status: "ok" }>("/api/granola/agenda/status", { id, status })
+}
+
+/** POST /api/granola/agenda/delete — remove o evento (e do Google se sincronizado). */
+export async function deleteAgenda(id: number) {
+  return apiPost<{ status: "ok" }>("/api/granola/agenda/delete", { id })
+}
+
+// --------------------------------------------------------------------------
+// Google Calendar — /api/granola/gcal/*
+// --------------------------------------------------------------------------
+
+export async function fetchGcalStatus() {
+  return apiGet<GcalStatus>("/api/granola/gcal/status")
+}
+
+/** GET /api/granola/gcal/auth — retorna {auth_url, state} pra redirecionar.
+ *  Falha com 400 + erro se gcal_credentials.json estiver ausente. */
+export async function startGcalAuth() {
+  return apiGet<{ auth_url: string; state: string }>("/api/granola/gcal/auth")
+}
+
+/** GET /api/granola/gcal/calendars — lista agendas do Google do usuario. */
+export async function fetchGcalCalendars() {
+  return apiGet<{ calendars: GcalCalendar[] }>("/api/granola/gcal/calendars")
+}
+
+/** POST /api/granola/gcal/config — define qual calendar_id receber sync. */
+export async function setGcalCalendar(calendarId: string) {
+  return apiPost<{ status: "ok"; calendar_id: string }>(
+    "/api/granola/gcal/config",
+    { calendar_id: calendarId }
+  )
+}
+
+/** POST /api/granola/gcal/sync — full sync bidirecional (push novos, pull updates). */
+export async function syncGcal() {
+  return apiPost<GcalSyncStats>("/api/granola/gcal/sync")
+}
+
 // --------------------------------------------------------------------------
 // Financeiro — /api/granola/financeiro?cliente_id=&processo_id=&tipo=&status=&periodo_inicio=&periodo_fim=&limite=
 // --------------------------------------------------------------------------
@@ -487,6 +544,8 @@ export const queryKeys = {
     ["granola", "financeiro", params] as const,
   resumoFinanceiro: (params: ResumoFinanceiroParams = {}) =>
     ["granola", "financeiro", "resumo", params] as const,
+  gcalStatus: ["granola", "gcal", "status"] as const,
+  gcalCalendars: ["granola", "gcal", "calendars"] as const,
   coletaDatajudStatus: ["granola", "coleta", "datajud", "status"] as const,
   coletaDjenStatus: ["granola", "coleta", "djen", "status"] as const,
   coletaLog: (since: number) =>

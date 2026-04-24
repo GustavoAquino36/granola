@@ -437,6 +437,14 @@ export interface ResumoFinanceiro {
 // AGENDA (eventos)
 // --------------------------------------------------------------------------
 
+export type TipoAgenda =
+  | "audiencia"
+  | "reuniao"
+  | "prazo"
+  | "compromisso"
+  | "outro"
+  | string
+
 export interface AgendaEvent {
   id: number
   processo_id: number | null
@@ -446,12 +454,52 @@ export interface AgendaEvent {
   descricao: string | null
   data_inicio: string
   data_fim: string | null
-  tipo: string
+  tipo: TipoAgenda
   local: string | null
   status: string
   google_event_id: string | null
   criado_em: string
   atualizado_em: string | null
+  /** Joins de listar_agenda. */
+  numero_cnj?: string | null
+  processo_titulo?: string | null
+  cliente_nome?: string | null
+}
+
+/** Body pro upsert de agenda. */
+export type AgendaInput = Partial<
+  Omit<
+    AgendaEvent,
+    "id" | "criado_em" | "atualizado_em" |
+    "numero_cnj" | "processo_titulo" | "cliente_nome" | "google_event_id"
+  >
+> & {
+  titulo: string
+  data_inicio: string
+}
+
+// --------------------------------------------------------------------------
+// GOOGLE CALENDAR (sync)
+// --------------------------------------------------------------------------
+
+export interface GcalStatus {
+  authenticated: boolean
+  calendar_id: string | null
+}
+
+export interface GcalCalendar {
+  id: string
+  summary: string
+  description?: string
+  primary?: boolean
+  accessRole?: string
+}
+
+export interface GcalSyncStats {
+  pushed: number
+  pulled: number
+  updated: number
+  errors: string[]
 }
 
 // --------------------------------------------------------------------------
