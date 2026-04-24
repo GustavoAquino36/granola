@@ -65,15 +65,23 @@ export function ProcessosPage() {
     queryFn: () => fetchProcessos(params),
   })
 
-  // Conjunto de areas presentes nos dados — pra oferecer filtros dinamicos.
-  // Depende de data?.processos direto pra nao refazer o set a cada render.
+  // Lista de areas: query separada SEM filtros, pra que os chips fiquem
+  // estaveis quando o usuario aplica status/area (bug 2026-04-25 — antes,
+  // areasDisponiveis vinha do `data` filtrado e colapsava ao aplicar qualquer filtro).
+  const optionsParams = useMemo(() => ({ limite: 500 }), [])
+  const { data: optionsData } = useQuery({
+    queryKey: queryKeys.processos(optionsParams),
+    queryFn: () => fetchProcessos(optionsParams),
+    staleTime: 5 * 60 * 1000, // 5 min — areas mudam raramente
+  })
+
   const areasDisponiveis = useMemo(() => {
     const set = new Set<string>()
-    for (const p of data?.processos ?? []) {
+    for (const p of optionsData?.processos ?? []) {
       if (p.area) set.add(p.area)
     }
     return Array.from(set).sort()
-  }, [data?.processos])
+  }, [optionsData?.processos])
 
   const processos = data?.processos ?? []
 
