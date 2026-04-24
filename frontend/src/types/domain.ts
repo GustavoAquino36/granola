@@ -131,6 +131,8 @@ export interface ProcessoDetail extends Processo {
   prazos: Prazo[]
   /** Backend ja retorna; o frontend ainda nao exibia ate a Fase 4. */
   documentos?: Documento[]
+  /** Backend ja retorna; o frontend ainda nao exibia ate a Fase 5A. */
+  financeiro?: Financeiro[]
 }
 
 /** Shape do body pro upsert de processo. */
@@ -360,12 +362,25 @@ export type TipoFinanceiro =
 
 export type StatusFinanceiro = "pendente" | "pago" | "cancelado" | string
 
+/** Categorias logicas usadas pelos quadrantes do FinanceiroPage:
+ *  - "fixo": receita fixa recorrente (com tipo=receita_fixa)
+ *  - "custo_escritorio": custo operacional fixo (com tipo=custo_operacional)
+ *  - "futuro": receita variavel esperada (com tipo=receita_variavel)
+ *  - "custo_var": custo variavel (com tipo=custo_variavel)
+ *  Backend aceita qualquer string; o frontend usa essas 4 + null. */
+export type CategoriaFinanceiro =
+  | "fixo"
+  | "custo_escritorio"
+  | "futuro"
+  | "custo_var"
+  | string
+
 export interface Financeiro {
   id: number
   processo_id: number | null
   cliente_id: number | null
   tipo: TipoFinanceiro
-  categoria: string | null
+  categoria: CategoriaFinanceiro | null
   descricao: string
   valor: number
   data_vencimento: string | null
@@ -385,6 +400,28 @@ export interface Financeiro {
   data_inicio_contrato: string | null
   criado_em: string
   atualizado_em: string | null
+  /** Joins em listar_financeiro. */
+  numero_cnj?: string | null
+  processo_titulo?: string | null
+  cliente_nome?: string | null
+}
+
+export interface FinanceiroResponse {
+  lancamentos: Financeiro[]
+  total: number
+}
+
+/** Body pro upsert. `id` ausente cria; presente atualiza. */
+export type FinanceiroInput = Partial<
+  Omit<
+    Financeiro,
+    "id" | "criado_em" | "atualizado_em" |
+    "numero_cnj" | "processo_titulo" | "cliente_nome"
+  >
+> & {
+  tipo: TipoFinanceiro
+  descricao: string
+  valor: number
 }
 
 export interface ResumoFinanceiro {

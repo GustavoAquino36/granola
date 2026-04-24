@@ -8,6 +8,8 @@ import type {
   ColetaLogResponse,
   DocumentoUploadInput,
   DocumentosResponse,
+  FinanceiroInput,
+  FinanceiroResponse,
   KanbanResponse,
   MovimentacaoInput,
   ParteInput,
@@ -16,6 +18,7 @@ import type {
   ProcessoDetail,
   ProcessoInput,
   ProcessosResponse,
+  ResumoFinanceiro,
   Stats,
 } from "@/types/domain"
 
@@ -338,6 +341,77 @@ export async function fetchAgenda(params: ListarAgendaParams = {}) {
 }
 
 // --------------------------------------------------------------------------
+// Financeiro — /api/granola/financeiro?cliente_id=&processo_id=&tipo=&status=&periodo_inicio=&periodo_fim=&limite=
+// --------------------------------------------------------------------------
+export interface ListarFinanceiroParams {
+  clienteId?: number
+  processoId?: number
+  tipo?: string
+  status?: string
+  periodoInicio?: string
+  periodoFim?: string
+  limite?: number
+}
+
+export async function fetchFinanceiro(params: ListarFinanceiroParams = {}) {
+  const qs = new URLSearchParams()
+  if (params.clienteId !== undefined) qs.set("cliente_id", String(params.clienteId))
+  if (params.processoId !== undefined) qs.set("processo_id", String(params.processoId))
+  if (params.tipo) qs.set("tipo", params.tipo)
+  if (params.status) qs.set("status", params.status)
+  if (params.periodoInicio) qs.set("periodo_inicio", params.periodoInicio)
+  if (params.periodoFim) qs.set("periodo_fim", params.periodoFim)
+  if (params.limite) qs.set("limite", String(params.limite))
+  const suffix = qs.toString() ? `?${qs.toString()}` : ""
+  return apiGet<FinanceiroResponse>(`/api/granola/financeiro${suffix}`)
+}
+
+export interface ResumoFinanceiroParams {
+  clienteId?: number
+  processoId?: number
+  periodoInicio?: string
+  periodoFim?: string
+}
+
+export async function fetchResumoFinanceiro(params: ResumoFinanceiroParams = {}) {
+  const qs = new URLSearchParams()
+  if (params.clienteId !== undefined) qs.set("cliente_id", String(params.clienteId))
+  if (params.processoId !== undefined) qs.set("processo_id", String(params.processoId))
+  if (params.periodoInicio) qs.set("periodo_inicio", params.periodoInicio)
+  if (params.periodoFim) qs.set("periodo_fim", params.periodoFim)
+  const suffix = qs.toString() ? `?${qs.toString()}` : ""
+  return apiGet<ResumoFinanceiro>(`/api/granola/financeiro/resumo${suffix}`)
+}
+
+/** POST /api/granola/financeiro/upsert — cria (sem id) ou atualiza (com id). */
+export async function upsertFinanceiro(
+  input: FinanceiroInput & { id?: number }
+): Promise<{ id: number }> {
+  return apiPost<{ id: number; status: "ok" }>(
+    "/api/granola/financeiro/upsert",
+    input
+  )
+}
+
+/** POST /api/granola/financeiro/pagar — marca como pago e seta data_pagamento=now. */
+export async function pagarFinanceiro(id: number, formaPagamento?: string) {
+  return apiPost<{ status: "ok" }>("/api/granola/financeiro/pagar", {
+    id,
+    forma_pagamento: formaPagamento,
+  })
+}
+
+/** POST /api/granola/financeiro/despagar — volta status pra pendente, limpa data_pagamento. */
+export async function despagarFinanceiro(id: number) {
+  return apiPost<{ status: "ok" }>("/api/granola/financeiro/despagar", { id })
+}
+
+/** POST /api/granola/financeiro/delete — hard delete (sem soft-delete). */
+export async function deleteFinanceiro(id: number) {
+  return apiPost<{ status: "ok" }>("/api/granola/financeiro/delete", { id })
+}
+
+// --------------------------------------------------------------------------
 // Documentos — /api/granola/documentos?processo_id=&cliente_id=
 // --------------------------------------------------------------------------
 export interface ListarDocumentosParams {
@@ -409,6 +483,10 @@ export const queryKeys = {
   documentos: (params: ListarDocumentosParams = {}) =>
     ["granola", "documentos", params] as const,
   kanban: ["granola", "kanban"] as const,
+  financeiro: (params: ListarFinanceiroParams = {}) =>
+    ["granola", "financeiro", params] as const,
+  resumoFinanceiro: (params: ResumoFinanceiroParams = {}) =>
+    ["granola", "financeiro", "resumo", params] as const,
   coletaDatajudStatus: ["granola", "coleta", "datajud", "status"] as const,
   coletaDjenStatus: ["granola", "coleta", "djen", "status"] as const,
   coletaLog: (since: number) =>
