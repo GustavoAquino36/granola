@@ -123,31 +123,45 @@ export function KanbanPage() {
           </p>
         </div>
       ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCorners}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-        >
-          <div
-            className="flex gap-4 overflow-x-auto pb-4"
-            style={{ scrollbarGutter: "stable" }}
+        <>
+          {totalCards(colunas) === 0 && (
+            <div className="mb-4 rounded-card border border-border bg-surface-alt px-5 py-4">
+              <p className="font-display italic text-base text-foreground">
+                Nenhum processo está atribuído a uma coluna ainda.
+              </p>
+              <p className="mt-1 text-[0.84rem] text-muted">
+                Processos novos aparecem em <strong>Novo</strong> automaticamente.
+                Em <a href="/processos" className="text-dourado underline-offset-2 hover:underline">/processos</a> você
+                pode editar cada um e atribuir uma coluna; ou arraste-os aqui mesmo quando aparecerem.
+              </p>
+            </div>
+          )}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
           >
-            {colunas.map((col) => (
-              <KanbanColumn
-                key={col.key}
-                coluna={col}
-                onCardClick={(id) => navigate(`/processos/${id}`)}
-              />
-            ))}
-          </div>
+            <div
+              className="flex gap-4 overflow-x-auto pb-4"
+              style={{ scrollbarGutter: "stable" }}
+            >
+              {colunas.map((col) => (
+                <KanbanColumn
+                  key={col.key}
+                  coluna={col}
+                  onCardClick={(id) => navigate(`/processos/${id}`)}
+                />
+              ))}
+            </div>
 
-          <DragOverlay>
-            {activeId !== null && cardById.has(activeId) ? (
-              <CardView card={cardById.get(activeId)!.card} dragging />
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+            <DragOverlay>
+              {activeId !== null && cardById.has(activeId) ? (
+                <CardView card={cardById.get(activeId)!.card} dragging />
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </>
       )}
     </div>
   )
@@ -193,8 +207,11 @@ function KanbanColumn({
 
       <div className="flex min-h-[140px] flex-col gap-2 p-2">
         {coluna.cards.length === 0 ? (
-          <div className="px-2 py-6 text-center text-[0.78rem] italic text-muted">
-            sem processos
+          <div
+            className="flex flex-1 items-center justify-center px-2 py-6 text-[1.5rem] text-muted/30"
+            aria-label="Coluna vazia"
+          >
+            —
           </div>
         ) : (
           coluna.cards.map((c) => (
