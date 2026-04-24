@@ -37,26 +37,37 @@ const POLL_TIMEOUT_MS = 5 * 60 * 1000
 interface GenericResumo {
   inicio: string
   fim: string | null
-  [key: string]: unknown
 }
 
-type StatusFetcher = () => Promise<{ resumo: GenericResumo | null }>
+/** Retorno normalizado dos status endpoints (Datajud/DJEN devolvem shapes
+ *  compativeis no nivel minimo que precisamos). */
+interface StatusResponse {
+  resumo: GenericResumo | null
+}
 
 interface ColetaConfig {
   /** Funcao que dispara o start POST e retorna. */
   startFn: () => Promise<unknown>
   /** Funcao que retorna o status atual (com resumo.fim). */
-  statusFn: StatusFetcher
+  statusFn: () => Promise<StatusResponse>
 }
 
+/** Adaptador pra normalizar a resposta do status (ambos tem `resumo` com
+ *  `inicio` e `fim`, o resto e especifico de cada fonte). */
 const SOURCES: Record<"datajud" | "djen", ColetaConfig> = {
   datajud: {
     startFn: startColetaDatajud,
-    statusFn: fetchColetaDatajudStatus,
+    statusFn: async () => {
+      const r = await fetchColetaDatajudStatus()
+      return { resumo: r.resumo }
+    },
   },
   djen: {
     startFn: startColetaDjen,
-    statusFn: fetchColetaDjenStatus,
+    statusFn: async () => {
+      const r = await fetchColetaDjenStatus()
+      return { resumo: r.resumo }
+    },
   },
 }
 

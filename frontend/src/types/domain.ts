@@ -183,6 +183,14 @@ export type FonteMovimentacao =
   | "manual"
   | string
 
+export type TratamentoMov =
+  | "pendente"
+  | "visto"
+  | "prazo"
+  | "ignorado"
+  | null
+  | string
+
 export interface Movimentacao {
   id: number
   processo_id: number
@@ -194,6 +202,10 @@ export interface Movimentacao {
   hash_dedup: string | null
   gera_prazo: 0 | 1
   criado_em: string
+  /** Status de tratamento pelo usuario: pendente/visto/prazo/ignorado. */
+  tratamento?: TratamentoMov
+  /** Se tratamento='prazo', aponta pro prazo criado. */
+  prazo_id?: number | null
   /** Joins em /api/granola/stats.movimentacoes_recentes. */
   numero_cnj?: string | null
   processo_titulo?: string | null

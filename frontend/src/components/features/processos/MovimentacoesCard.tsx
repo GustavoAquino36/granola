@@ -1,18 +1,29 @@
 import { useEffect, useRef, useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import {
+  Calendar,
   CheckCircle2,
   Download,
+  Eye,
   Loader2,
+  MoreHorizontal,
   Plus,
   RefreshCw,
+  RotateCcw,
 } from "lucide-react"
-import { criarMovimentacao, queryKeys } from "@/api/granola"
+import {
+  criarMovimentacao,
+  criarPrazoDaMov,
+  marcarMovPendente,
+  marcarMovVista,
+  queryKeys,
+} from "@/api/granola"
 import type {
   ColetaLogEntry,
   FonteMovimentacao,
   Movimentacao,
   MovimentacaoInput,
+  TratamentoMov,
 } from "@/types/domain"
 import { formatDate, truncate } from "@/lib/format"
 import {
@@ -27,6 +38,30 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface MovimentacoesCardProps {
   processoId: number
@@ -164,7 +199,7 @@ export function MovimentacoesCard({
         />
       )}
 
-      <MovsList movs={movimentacoes} />
+      <MovsList movs={movimentacoes} processoId={processoId} />
     </Card>
   )
 }
@@ -436,7 +471,15 @@ function Field({
 
 // --------------------------------------------------------------------------
 
-function MovsList({ movs }: { movs: Movimentacao[] }) {
+function MovsList({
+  movs,
+  processoId,
+}: {
+  movs: Movimentacao[]
+  processoId: number
+}) {
+  const [criarPrazoFor, setCriarPrazoFor] = useState<Movimentacao | null>(null)
+
   if (movs.length === 0) {
     return (
       <div className="px-5 py-10 text-center">
@@ -456,34 +499,318 @@ function MovsList({ movs }: { movs: Movimentacao[] }) {
   }
 
   return (
-    <ol className="flex flex-col">
-      {movs.slice(0, 50).map((m) => (
-        <li
-          key={m.id}
-          className="grid grid-cols-[110px_1fr_auto] items-start gap-3 border-b border-border px-5 py-3 last:border-b-0 hover:bg-dourado/4"
-        >
-          <div className="tabular-nums pt-0.5 font-mono text-[0.72rem] text-muted">
-            {formatDate(m.data_movimento)}
-          </div>
-          <div className="min-w-0">
-            <div className="font-sans text-[0.875rem] font-semibold text-foreground">
-              {m.tipo || "Movimentacao"}
-            </div>
-            {m.descricao && (
-              <div className="mt-0.5 text-[0.8125rem] leading-relaxed text-muted">
-                {truncate(m.descricao, 200)}
-              </div>
-            )}
-          </div>
-          <SourceTag fonte={m.fonte} />
-        </li>
-      ))}
-      {movs.length > 50 && (
-        <li className="px-5 py-2.5 text-center text-[0.75rem] text-muted">
-          Mostrando as 50 mais recentes de {movs.length}.
-        </li>
+    <>
+      <ol className="flex flex-col">
+        {movs.slice(0, 50).map((m) => (
+          <MovLi
+            key={m.id}
+            mov={m}
+            processoId={processoId}
+            onCriarPrazo={() => setCriarPrazoFor(m)}
+          />
+        ))}
+        {movs.length > 50 && (
+          <li className="px-5 py-2.5 text-center text-[0.75rem] text-muted">
+            Mostrando as 50 mais recentes de {movs.length}.
+          </li>
+        )}
+      </ol>
+
+      <CriarPrazoDialog
+        mov={criarPrazoFor}
+        processoId={processoId}
+        onClose={() => setCriarPrazoFor(null)}
+      />
+    </>
+  )
+}
+
+function MovLi({
+  mov,
+  processoId,
+  onCriarPrazo,
+}: {
+  mov: Movimentacao
+  processoId: number
+  onCriarPrazo: () => void
+}) {
+  const queryClient = useQueryClient()
+
+  const marcarVista = useMutation({
+    mutationFn: () => marcarMovVista(mov.id),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.processo(processoId) }),
+  })
+  const marcarPendente = useMutation({
+    mutationFn: () => marcarMovPendente(mov.id),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.processo(processoId) }),
+  })
+
+  const tratamento = mov.tratamento ?? "pendente"
+  const isVisto = tratamento === "visto"
+  const isPrazo = tratamento === "prazo"
+  const isIgnorado = tratamento === "ignorado"
+  const muted = isVisto || isIgnorado
+
+  return (
+    <li
+      className={cn(
+        "grid grid-cols-[110px_1fr_auto_32px] items-start gap-3 border-b border-border px-5 py-3 last:border-b-0 hover:bg-dourado/4",
+        muted && "opacity-70"
       )}
-    </ol>
+    >
+      <div className="tabular-nums pt-0.5 font-mono text-[0.72rem] text-muted">
+        {formatDate(mov.data_movimento)}
+      </div>
+      <div className="min-w-0">
+        <div
+          className={cn(
+            "font-sans text-[0.875rem] font-semibold",
+            isVisto || isIgnorado ? "text-muted" : "text-foreground"
+          )}
+        >
+          {mov.tipo || "Movimentacao"}
+        </div>
+        {mov.descricao && (
+          <div className="mt-0.5 text-[0.8125rem] leading-relaxed text-muted">
+            {truncate(mov.descricao, 200)}
+          </div>
+        )}
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <SourceTag fonte={mov.fonte} />
+        {tratamento !== "pendente" && (
+          <TratamentoBadge tratamento={tratamento} />
+        )}
+      </div>
+      <div className="pt-0.5 text-right">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Acoes da movimentacao"
+              className="grid h-7 w-7 place-items-center rounded-pill bg-transparent text-muted transition-colors hover:bg-dourado/10 hover:text-foreground"
+              disabled={marcarVista.isPending || marcarPendente.isPending}
+            >
+              {marcarVista.isPending || marcarPendente.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
+              ) : (
+                <MoreHorizontal className="h-4 w-4" strokeWidth={1.75} />
+              )}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[200px]">
+            {!isVisto && !isPrazo && (
+              <DropdownMenuItem onClick={() => marcarVista.mutate()}>
+                <Eye className="h-3.5 w-3.5" strokeWidth={1.75} />
+                Marcar como vista
+              </DropdownMenuItem>
+            )}
+            {(isVisto || isIgnorado) && (
+              <DropdownMenuItem onClick={() => marcarPendente.mutate()}>
+                <RotateCcw className="h-3.5 w-3.5" strokeWidth={1.75} />
+                Voltar para pendente
+              </DropdownMenuItem>
+            )}
+            {!isPrazo && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onCriarPrazo}>
+                  <Calendar className="h-3.5 w-3.5 text-dourado" strokeWidth={1.75} />
+                  Criar prazo desta movimentação
+                </DropdownMenuItem>
+              </>
+            )}
+            {isPrazo && (
+              <DropdownMenuItem disabled>
+                <CheckCircle2 className="h-3.5 w-3.5 text-sucesso" strokeWidth={1.75} />
+                Prazo ja criado
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </li>
+  )
+}
+
+function TratamentoBadge({ tratamento }: { tratamento: TratamentoMov }) {
+  const map: Record<string, { label: string; cls: string }> = {
+    visto: { label: "Vista", cls: "bg-fumaca/14 text-fumaca" },
+    prazo: { label: "Prazo criado", cls: "bg-sucesso/12 text-sucesso" },
+    ignorado: { label: "Ignorada", cls: "bg-fumaca/14 text-fumaca" },
+  }
+  const key = typeof tratamento === "string" ? tratamento : ""
+  const s = map[key]
+  if (!s) return null
+  return (
+    <span
+      className={cn(
+        "rounded-pill px-2 py-[2px] text-[0.62rem] font-semibold",
+        s.cls
+      )}
+    >
+      {s.label}
+    </span>
+  )
+}
+
+// --------------------------------------------------------------------------
+// Dialog pra criar prazo a partir de uma movimentacao
+// --------------------------------------------------------------------------
+
+function CriarPrazoDialog({
+  mov,
+  processoId,
+  onClose,
+}: {
+  mov: Movimentacao | null
+  processoId: number
+  onClose: () => void
+}) {
+  return (
+    <Dialog open={mov !== null} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[520px]">
+        {mov && (
+          <CriarPrazoForm
+            // key force remount quando mov muda — estado interno reseta
+            // sem precisar de useEffect + setState (React best practice)
+            key={mov.id}
+            mov={mov}
+            processoId={processoId}
+            onClose={onClose}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function CriarPrazoForm({
+  mov,
+  processoId,
+  onClose,
+}: {
+  mov: Movimentacao
+  processoId: number
+  onClose: () => void
+}) {
+  const queryClient = useQueryClient()
+  const [titulo, setTitulo] = useState(mov.tipo || "Prazo processual")
+  const [dataVenc, setDataVenc] = useState(() =>
+    new Date(Date.now() + 15 * 24 * 3600 * 1000).toISOString().slice(0, 10)
+  )
+  const [prioridade, setPrioridade] = useState<"alta" | "media" | "normal">(
+    "media"
+  )
+  const [descricao, setDescricao] = useState(mov.descricao ?? "")
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      criarPrazoDaMov({
+        mov_id: mov.id,
+        titulo: titulo.trim(),
+        data_vencimento: dataVenc,
+        prioridade,
+        descricao: descricao.trim() || undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.processo(processoId) })
+      queryClient.invalidateQueries({ queryKey: ["granola", "prazos"] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats })
+      onClose()
+    },
+  })
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle className="font-display text-xl font-normal">
+          Criar prazo desta movimentação
+        </DialogTitle>
+        <DialogDescription>
+          A movimentação fica marcada como <strong>Prazo criado</strong> e
+          o prazo novo entra em <em>Próximos prazos</em> do dashboard.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-3">
+        <Field label="Título">
+          <Input
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
+            placeholder="Ex: Contestação"
+            autoFocus
+          />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Data de vencimento">
+            <Input
+              type="date"
+              className="font-mono"
+              value={dataVenc}
+              onChange={(e) => setDataVenc(e.target.value)}
+            />
+          </Field>
+          <Field label="Prioridade">
+            <Select
+              value={prioridade}
+              onValueChange={(v) =>
+                setPrioridade(v as "alta" | "media" | "normal")
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="alta">Alta</SelectItem>
+                <SelectItem value="media">Média</SelectItem>
+                <SelectItem value="normal">Normal</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+        <Field label="Descrição">
+          <Textarea
+            rows={3}
+            value={descricao}
+            onChange={(e) => setDescricao(e.target.value)}
+            placeholder="Contexto ou observacoes relevantes"
+          />
+        </Field>
+      </div>
+
+      {mutation.isError && (
+        <p className="rounded-card border-l-2 border-erro bg-erro/8 px-3 py-2 text-sm text-erro">
+          {mutation.error instanceof Error
+            ? mutation.error.message
+            : "Falha ao criar prazo."}
+        </p>
+      )}
+
+      <DialogFooter>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onClose}
+          disabled={mutation.isPending}
+        >
+          Cancelar
+        </Button>
+        <Button
+          type="button"
+          disabled={mutation.isPending || !titulo.trim() || !dataVenc}
+          onClick={() => mutation.mutate()}
+          className="bg-dourado text-tinta hover:bg-dourado-claro"
+        >
+          {mutation.isPending && (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          )}
+          Criar prazo
+        </Button>
+      </DialogFooter>
+    </>
   )
 }
 
