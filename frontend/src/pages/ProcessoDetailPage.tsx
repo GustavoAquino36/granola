@@ -21,14 +21,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MovimentacoesCard } from "@/components/features/processos/MovimentacoesCard"
+import { ProcessoFormDialog } from "@/components/features/processos/ProcessoFormDialog"
 
 export function ProcessoDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const numId = Number(id)
   const valid = Number.isFinite(numId) && numId > 0
-  // Reservado pro commit 3A.5 (form de edit)
-  const [, setShowEditDialog] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: queryKeys.processo(numId),
@@ -90,6 +90,12 @@ export function ProcessoDetailPage() {
             <PartesCard partes={data.partes} />
             <PrazosVinculadosCard prazos={data.prazos} processoId={data.id} />
           </div>
+
+          <ProcessoFormDialog
+            open={showEditDialog}
+            onOpenChange={setShowEditDialog}
+            processo={data}
+          />
         </>
       )}
     </div>

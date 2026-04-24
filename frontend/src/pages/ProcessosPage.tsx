@@ -13,6 +13,7 @@ import { fetchProcessos, queryKeys } from "@/api/granola"
 import type { Processo } from "@/types/domain"
 import { formatBRL, formatCNJ, formatDate, truncate } from "@/lib/format"
 import { cn } from "@/lib/utils"
+import { ProcessoFormDialog } from "@/components/features/processos/ProcessoFormDialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardAction } from "@/components/ui/card"
 import {
@@ -47,6 +48,7 @@ export function ProcessosPage() {
   const [busca, setBusca] = useState("")
   const [status, setStatus] = useState<FiltroStatus>("todos")
   const [area, setArea] = useState<string | undefined>(undefined)
+  const [showNewDialog, setShowNewDialog] = useState(false)
 
   const params = useMemo(
     () => ({
@@ -105,9 +107,7 @@ export function ProcessosPage() {
               "gap-1.5 rounded-card bg-dourado text-tinta hover:bg-dourado-claro",
               "hover:shadow-[0_4px_12px_-4px_rgba(198,158,91,0.6)]"
             )}
-            onClick={() => {
-              window.alert("Form de criar processo chega no commit 3A.5.")
-            }}
+            onClick={() => setShowNewDialog(true)}
           >
             <Plus className="h-3.5 w-3.5" strokeWidth={2} />
             Adicionar processo
@@ -211,6 +211,12 @@ export function ProcessosPage() {
           </Table>
         )}
       </Card>
+
+      <ProcessoFormDialog
+        open={showNewDialog}
+        onOpenChange={setShowNewDialog}
+        onSaved={(id) => navigate(`/processos/${id}`)}
+      />
     </div>
   )
 }
