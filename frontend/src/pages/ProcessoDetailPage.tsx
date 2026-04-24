@@ -1,12 +1,25 @@
 import { useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
+  Archive,
+  ArchiveRestore,
   ArrowLeft,
+  CheckCircle2,
+  ChevronDown,
   ExternalLink,
+  Loader2,
+  PauseCircle,
   Pencil,
+  PlayCircle,
 } from "lucide-react"
-import { fetchProcessoById, queryKeys } from "@/api/granola"
+import {
+  archiveProcesso,
+  fetchProcessoById,
+  queryKeys,
+  unarchiveProcesso,
+  updateProcessoStatus,
+} from "@/api/granola"
 import type { ProcessoDetail, Parte, Prazo } from "@/types/domain"
 import {
   describeDeadline,
@@ -17,8 +30,26 @@ import {
   truncate,
 } from "@/lib/format"
 import { cn } from "@/lib/utils"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MovimentacoesCard } from "@/components/features/processos/MovimentacoesCard"
 import { ProcessoFormDialog } from "@/components/features/processos/ProcessoFormDialog"
@@ -26,14 +57,35 @@ import { ProcessoFormDialog } from "@/components/features/processos/ProcessoForm
 export function ProcessoDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const numId = Number(id)
   const valid = Number.isFinite(numId) && numId > 0
   const [showEditDialog, setShowEditDialog] = useState(false)
+  /** Qual acao de confirmacao esta aberta (encerrar / arquivar / reativar). */
+  const [confirm, setConfirm] = useState<null | "encerrar" | "arquivar" | "reativar">(
+    null
+  )
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: queryKeys.processo(numId),
     queryFn: () => fetchProcessoById(numId),
     enabled: valid,
+  })
+
+  const mutation = useMutation({
+    mutationFn: async (action: "encerrar" | "arquivar" | "reativar" | string) => {
+      if (action === "arquivar") return archiveProcesso(numId)
+      if (action === "reativar") return unarchiveProcesso(numId)
+      if (action === "encerrar") return updateProcessoStatus(numId, "encerrado")
+      // Qualquer outra string = status direto (suspenso, ativo etc)
+      return updateProcessoStatus(numId, action)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.processo(numId) })
+      queryClient.invalidateQueries({ queryKey: ["granola", "processos"] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats })
+      setConfirm(null)
+    },
   })
 
   if (!valid) {
@@ -77,6 +129,14 @@ export function ProcessoDetailPage() {
           <DetailHead
             processo={data}
             onEdit={() => setShowEditDialog(true)}
+            onQuickStatus={(action) => {
+              if (action === "encerrar" || action === "arquivar" || action === "reativar") {
+                setConfirm(action)
+              } else {
+                mutation.mutate(action)
+              }
+            }}
+            isUpdating={mutation.isPending}
           />
 
           <div className="mt-5">
@@ -96,6 +156,74 @@ export function ProcessoDetailPage() {
             onOpenChange={setShowEditDialog}
             processo={data}
           />
+
+          <AlertDialog
+            open={confirm !== null}
+            onOpenChange={(open) => !open && setConfirm(null)}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="font-display text-xl font-normal">
+                  {confirm === "encerrar" && "Encerrar este processo?"}
+                  {confirm === "arquivar" && "Arquivar este processo?"}
+                  {confirm === "reativar" && "Reativar este processo?"}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {confirm === "encerrar" && (
+                    <>
+                      O processo <strong>{data.titulo}</strong> sai de atendimento
+                      ativo. Movimentacoes e prazos ficam preservados; voce pode
+                      reativar mudando o status depois.
+                    </>
+                  )}
+                  {confirm === "arquivar" && (
+                    <>
+                      <strong>{data.titulo}</strong> sai da lista principal.
+                      <strong> Nao e apagado</strong> — historico, partes e documentos
+                      ficam intactos. Pode reativar a qualquer momento.
+                    </>
+                  )}
+                  {confirm === "reativar" && (
+                    <>
+                      Volta pra lista de processos ativos. Ele passa a receber
+                      coletas DataJud e entra novamente em filtros de status.
+                    </>
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              {mutation.isError && (
+                <p className="rounded-card border-l-2 border-erro bg-erro/8 px-3 py-2 text-sm text-erro">
+                  {mutation.error instanceof Error
+                    ? mutation.error.message
+                    : "Nao foi possivel concluir."}
+                </p>
+              )}
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={mutation.isPending}>
+                  Cancelar
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (confirm) mutation.mutate(confirm)
+                  }}
+                  disabled={mutation.isPending}
+                  className={cn(
+                    confirm === "reativar"
+                      ? "bg-dourado text-tinta hover:bg-dourado-claro"
+                      : "bg-erro text-marfim hover:bg-erro/90"
+                  )}
+                >
+                  {mutation.isPending && (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  )}
+                  {confirm === "encerrar" && "Encerrar"}
+                  {confirm === "arquivar" && "Arquivar"}
+                  {confirm === "reativar" && "Reativar"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </>
       )}
     </div>
@@ -106,12 +234,23 @@ export function ProcessoDetailPage() {
 // Detail head
 // --------------------------------------------------------------------------
 
+type QuickStatusAction =
+  | "ativo"
+  | "suspenso"
+  | "encerrar"
+  | "arquivar"
+  | "reativar"
+
 function DetailHead({
   processo,
   onEdit,
+  onQuickStatus,
+  isUpdating,
 }: {
   processo: ProcessoDetail
   onEdit: () => void
+  onQuickStatus: (action: QuickStatusAction) => void
+  isUpdating: boolean
 }) {
   const sigla = processoSigla(processo)
   const prazoAlarme = prazoMaisProximo(processo.prazos)
@@ -207,11 +346,7 @@ function DetailHead({
             className="gap-1.5 rounded-card"
             asChild
           >
-            <a
-              href={processo.link_autos}
-              target="_blank"
-              rel="noreferrer"
-            >
+            <a href={processo.link_autos} target="_blank" rel="noreferrer">
               <ExternalLink className="h-3 w-3" strokeWidth={1.75} />
               Abrir no e-SAJ
             </a>
@@ -226,8 +361,91 @@ function DetailHead({
           <Pencil className="h-3 w-3" strokeWidth={1.75} />
           Editar
         </Button>
+        <StatusActions
+          processo={processo}
+          onQuickStatus={onQuickStatus}
+          isUpdating={isUpdating}
+        />
       </div>
     </div>
+  )
+}
+
+function StatusActions({
+  processo,
+  onQuickStatus,
+  isUpdating,
+}: {
+  processo: ProcessoDetail
+  onQuickStatus: (a: QuickStatusAction) => void
+  isUpdating: boolean
+}) {
+  const arquivado = processo.status === "arquivado"
+  const encerrado = processo.status === "encerrado"
+  const suspenso = processo.status === "suspenso"
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 rounded-card"
+          disabled={isUpdating}
+        >
+          {isUpdating ? (
+            <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} />
+          ) : null}
+          Status
+          <ChevronDown className="h-3 w-3" strokeWidth={1.75} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[200px]">
+        <DropdownMenuLabel className="font-sans text-[0.68rem] uppercase tracking-wider text-muted">
+          Mudar status
+        </DropdownMenuLabel>
+        {!arquivado && (
+          <>
+            {(encerrado || suspenso) && (
+              <DropdownMenuItem onClick={() => onQuickStatus("ativo")}>
+                <PlayCircle className="h-3.5 w-3.5" strokeWidth={1.75} />
+                Marcar em andamento
+              </DropdownMenuItem>
+            )}
+            {!suspenso && !encerrado && (
+              <DropdownMenuItem onClick={() => onQuickStatus("suspenso")}>
+                <PauseCircle className="h-3.5 w-3.5" strokeWidth={1.75} />
+                Suspender
+              </DropdownMenuItem>
+            )}
+            {!encerrado && (
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => onQuickStatus("encerrar")}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                Encerrar
+              </DropdownMenuItem>
+            )}
+          </>
+        )}
+        <DropdownMenuSeparator />
+        {arquivado ? (
+          <DropdownMenuItem onClick={() => onQuickStatus("reativar")}>
+            <ArchiveRestore className="h-3.5 w-3.5" strokeWidth={1.75} />
+            Reativar (tira do arquivo)
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => onQuickStatus("arquivar")}
+          >
+            <Archive className="h-3.5 w-3.5" strokeWidth={1.75} />
+            Arquivar
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

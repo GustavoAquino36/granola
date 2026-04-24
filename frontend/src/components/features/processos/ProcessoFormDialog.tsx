@@ -47,15 +47,14 @@ const optionalString = z
 const processoSchema = z.object({
   titulo: z
     .string()
-    .trim()
     .min(2, "Informe ao menos 2 caracteres.")
     .max(200, "Limite de 200 caracteres."),
   cliente_id: z
-    .number({ error: "Selecione um cliente." })
+    .number()
     .int()
     .positive("Selecione um cliente."),
   tipo: z.string().min(1),
-  area: z.string().trim().min(1, "Informe a area."),
+  area: z.string().min(1, "Informe a area."),
   numero_cnj: optionalString.refine(
     (v) => !v || /^[\d.\-/\s]+$/.test(v),
     { message: "Use apenas numeros e pontuacao." }
@@ -67,17 +66,12 @@ const processoSchema = z.object({
   vara: optionalString,
   tribunal: optionalString,
   juiz: optionalString,
-  polo: z.enum(["ativo", "passivo"]).optional(),
+  polo: z.string().optional(),
   parte_contraria: optionalString,
   cpf_cnpj_contraria: optionalString,
   advogado_contrario: optionalString,
   oab_contrario: optionalString,
-  valor_causa: z
-    .preprocess(
-      (v) => (typeof v === "string" && v.trim() === "" ? 0 : Number(v)),
-      z.number().min(0, "Valor nao pode ser negativo.")
-    )
-    .optional(),
+  valor_causa: z.number().min(0, "Valor nao pode ser negativo.").optional(),
   link_autos: optionalString,
   observacao: optionalString,
 })
