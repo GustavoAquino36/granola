@@ -129,6 +129,8 @@ export interface ProcessoDetail extends Processo {
   partes: Parte[]
   movimentacoes: Movimentacao[]
   prazos: Prazo[]
+  /** Backend ja retorna; o frontend ainda nao exibia ate a Fase 4. */
+  documentos?: Documento[]
 }
 
 /** Shape do body pro upsert de processo. */
@@ -218,7 +220,15 @@ export interface Movimentacao {
 // PRAZOS
 // --------------------------------------------------------------------------
 
-export type PrioridadePrazo = "alta" | "media" | "normal" | "baixa" | string
+/** Backend aceita qualquer string; o monolito legado usa "urgente" tambem.
+ *  Mantemos as quatro padroes + abertura pra string pra nao quebrar dados antigos. */
+export type PrioridadePrazo =
+  | "urgente"
+  | "alta"
+  | "media"
+  | "normal"
+  | "baixa"
+  | string
 export type StatusPrazo = "pendente" | "concluido" | "cancelado" | string
 
 export interface Prazo {
@@ -247,6 +257,88 @@ export interface Prazo {
 export interface PrazosResponse {
   prazos: Prazo[]
   total: number
+}
+
+/** Shape do body pro upsert de prazo. `id` ausente = cria, presente = atualiza. */
+export type PrazoInput = Partial<
+  Omit<
+    Prazo,
+    "id" | "criado_em" | "atualizado_em" |
+    "numero_cnj" | "processo_titulo" | "cliente_nome"
+  >
+> & {
+  titulo: string
+  data_vencimento: string
+}
+
+// --------------------------------------------------------------------------
+// DOCUMENTOS
+// --------------------------------------------------------------------------
+
+export type TipoDocumento =
+  | "peticao"
+  | "contrato"
+  | "procuracao"
+  | "decisao"
+  | "sentenca"
+  | "comprovante"
+  | "outro"
+  | string
+
+export interface Documento {
+  id: number
+  processo_id: number | null
+  cliente_id: number | null
+  nome: string
+  tipo: TipoDocumento
+  /** Nome do arquivo no disco — relativo a UPLOAD_DIR (granola/data/uploads/). */
+  caminho: string
+  tamanho_bytes: number | null
+  hash_sha256: string | null
+  observacao: string | null
+  criado_em: string
+}
+
+export interface DocumentosResponse {
+  documentos: Documento[]
+  total: number
+}
+
+/** Body pro upload — `file` em base64 (data URL stripped). */
+export interface DocumentoUploadInput {
+  file: string
+  nome: string
+  tipo?: TipoDocumento
+  processo_id?: number | null
+  cliente_id?: number | null
+  observacao?: string | null
+}
+
+// --------------------------------------------------------------------------
+// KANBAN
+// --------------------------------------------------------------------------
+
+export interface KanbanCard {
+  id: number
+  numero_cnj: string | null
+  titulo: string | null
+  area: string
+  fase: string
+  kanban_coluna: string
+  criado_em: string
+  cliente_nome: string | null
+}
+
+export interface KanbanColuna {
+  key: string
+  label: string
+  ordem: number
+  cor: string
+  cards: KanbanCard[]
+}
+
+export interface KanbanResponse {
+  colunas: KanbanColuna[]
 }
 
 // --------------------------------------------------------------------------

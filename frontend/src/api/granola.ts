@@ -6,8 +6,12 @@ import type {
   ClientesResponse,
   ColetaDatajudStatus,
   ColetaLogResponse,
+  DocumentoUploadInput,
+  DocumentosResponse,
+  KanbanResponse,
   MovimentacaoInput,
   ParteInput,
+  PrazoInput,
   PrazosResponse,
   ProcessoDetail,
   ProcessoInput,
@@ -46,7 +50,8 @@ export interface ListarPrazosParams {
   dias?: number
   /** Default: 'pendente'. Passar 'all' desativa o filtro. */
   status?: "pendente" | "concluido" | "cancelado" | "all"
-  prioridade?: "alta" | "media" | "normal" | "baixa"
+  /** Backend nao restringe valor; "urgente" tambem aparece no monolito legado. */
+  prioridade?: "urgente" | "alta" | "media" | "normal" | "baixa"
   processoId?: number
 }
 
@@ -58,6 +63,21 @@ export async function fetchPrazos(params: ListarPrazosParams = {}) {
   if (params.processoId !== undefined) qs.set("processo_id", String(params.processoId))
   const suffix = qs.toString() ? `?${qs.toString()}` : ""
   return apiGet<PrazosResponse>(`/api/granola/prazos${suffix}`)
+}
+
+/** POST /api/granola/prazo/upsert — cria (sem id) ou atualiza (com id). */
+export async function upsertPrazo(
+  input: PrazoInput & { id?: number }
+): Promise<{ id: number }> {
+  return apiPost<{ id: number; status: "ok" }>(
+    "/api/granola/prazo/upsert",
+    input
+  )
+}
+
+/** POST /api/granola/prazo/concluir — marca status=concluido + grava data_conclusao. */
+export async function concluirPrazo(id: number) {
+  return apiPost<{ status: "ok" }>("/api/granola/prazo/concluir", { id })
 }
 
 // --------------------------------------------------------------------------
@@ -318,6 +338,59 @@ export async function fetchAgenda(params: ListarAgendaParams = {}) {
 }
 
 // --------------------------------------------------------------------------
+// Documentos — /api/granola/documentos?processo_id=&cliente_id=
+// --------------------------------------------------------------------------
+export interface ListarDocumentosParams {
+  processoId?: number
+  clienteId?: number
+}
+
+export async function fetchDocumentos(params: ListarDocumentosParams = {}) {
+  const qs = new URLSearchParams()
+  if (params.processoId !== undefined)
+    qs.set("processo_id", String(params.processoId))
+  if (params.clienteId !== undefined)
+    qs.set("cliente_id", String(params.clienteId))
+  const suffix = qs.toString() ? `?${qs.toString()}` : ""
+  return apiGet<DocumentosResponse>(`/api/granola/documentos${suffix}`)
+}
+
+/** POST /api/granola/documento/upload — body com `file` em base64. */
+export async function uploadDocumento(
+  input: DocumentoUploadInput
+): Promise<{ id: number; caminho: string }> {
+  return apiPost<{ id: number; status: "ok"; caminho: string }>(
+    "/api/granola/documento/upload",
+    input
+  )
+}
+
+/** POST /api/granola/documento/delete — admin only no backend. */
+export async function deleteDocumento(id: number) {
+  return apiPost<{ status: "ok" }>("/api/granola/documento/delete", { id })
+}
+
+// --------------------------------------------------------------------------
+// Kanban — /api/granola/kanban (board completo: colunas + cards)
+// --------------------------------------------------------------------------
+
+/** GET /api/granola/kanban — colunas com cards (so processos status='ativo'). */
+export async function fetchKanban() {
+  return apiGet<KanbanResponse>("/api/granola/kanban")
+}
+
+/** POST /api/granola/processo/kanban — move processo pra outra coluna. */
+export async function moveProcessoKanban(
+  processoId: number,
+  kanbanColuna: string
+) {
+  return apiPost<{ status: "ok" }>("/api/granola/processo/kanban", {
+    id: processoId,
+    kanban_coluna: kanbanColuna,
+  })
+}
+
+// --------------------------------------------------------------------------
 // Query keys padronizadas pra TanStack Query — compartilhadas pra que
 // invalidate/refetch entre componentes hit o mesmo cache.
 // --------------------------------------------------------------------------
@@ -333,6 +406,9 @@ export const queryKeys = {
   processo: (id: number) => ["granola", "processo", id] as const,
   agenda: (params: ListarAgendaParams = {}) =>
     ["granola", "agenda", params] as const,
+  documentos: (params: ListarDocumentosParams = {}) =>
+    ["granola", "documentos", params] as const,
+  kanban: ["granola", "kanban"] as const,
   coletaDatajudStatus: ["granola", "coleta", "datajud", "status"] as const,
   coletaDjenStatus: ["granola", "coleta", "djen", "status"] as const,
   coletaLog: (since: number) =>
