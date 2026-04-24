@@ -15,7 +15,10 @@ import type {
   MovimentacaoInput,
 } from "@/types/domain"
 import { formatDate, truncate } from "@/lib/format"
-import { useColetaDatajud } from "@/lib/useColetaDatajud"
+import {
+  useColetaPublicacoes,
+  type ColetaPublicacoesSource,
+} from "@/lib/useColetaPublicacoes"
 import { cn } from "@/lib/utils"
 import {
   Card,
@@ -30,17 +33,51 @@ interface MovimentacoesCardProps {
   movimentacoes: Movimentacao[]
 }
 
+/** Resumo generico unificado pros dois fluxos (Datajud + DJEN tem campos
+ *  equivalentes onde precisamos exibir). */
+interface ResumoGenerico {
+  consultados?: number
+  oabs_consultadas?: number
+  com_novidade: number
+  novas_movimentacoes: unknown[]
+  erros: string[]
+  inicio: string
+  fim: string | null
+}
+
+interface LastFinished {
+  source: ColetaPublicacoesSource
+  resumo: ResumoGenerico
+}
+
 export function MovimentacoesCard({
   processoId,
   movimentacoes,
 }: MovimentacoesCardProps) {
   const [showManualForm, setShowManualForm] = useState(false)
-  const [showResumoBanner, setShowResumoBanner] = useState(false)
+  const [lastFinished, setLastFinished] = useState<LastFinished | null>(null)
 
-  const coleta = useColetaDatajud({
+  const coletaDatajud = useColetaPublicacoes<ResumoGenerico>("datajud", {
     invalidateProcessoId: processoId,
-    onDone: () => setShowResumoBanner(true),
+    onDone: (resumo) => {
+      if (resumo) setLastFinished({ source: "datajud", resumo })
+    },
   })
+  const coletaDjen = useColetaPublicacoes<ResumoGenerico>("djen", {
+    invalidateProcessoId: processoId,
+    onDone: (resumo) => {
+      if (resumo) setLastFinished({ source: "djen", resumo })
+    },
+  })
+
+  const anyRunning = coletaDatajud.running || coletaDjen.running
+  const activeColeta = coletaDatajud.running
+    ? { source: "datajud" as const, entries: coletaDatajud.entries }
+    : coletaDjen.running
+      ? { source: "djen" as const, entries: coletaDjen.entries }
+      : null
+
+  const startError = coletaDatajud.error || coletaDjen.error
 
   return (
     <Card className="gap-0 overflow-hidden rounded-card py-0">
@@ -59,50 +96,67 @@ export function MovimentacoesCard({
             size="sm"
             className="gap-1.5 rounded-card text-muted"
             onClick={() => setShowManualForm((v) => !v)}
+            disabled={anyRunning}
           >
             <Plus className="h-3 w-3" strokeWidth={1.75} />
             Manual
           </Button>
           <Button
+            variant="outline"
             size="sm"
-            disabled={coleta.running}
-            onClick={coleta.start}
-            className={cn(
-              "gap-1.5 rounded-card bg-dourado text-tinta hover:bg-dourado-claro",
-              "hover:shadow-[0_4px_12px_-4px_rgba(198,158,91,0.6)]"
-            )}
+            disabled={anyRunning}
+            onClick={coletaDjen.start}
+            className="gap-1.5 rounded-card"
+            title="Coletar publicações DJEN (comunicações por OAB)"
           >
-            {coleta.running ? (
+            {coletaDjen.running ? (
               <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} />
             ) : (
               <RefreshCw className="h-3 w-3" strokeWidth={1.75} />
             )}
-            {coleta.running ? "Coletando…" : "Coletar DataJud"}
+            DJEN
+          </Button>
+          <Button
+            size="sm"
+            disabled={anyRunning}
+            onClick={coletaDatajud.start}
+            className={cn(
+              "gap-1.5 rounded-card bg-dourado text-tinta hover:bg-dourado-claro",
+              "hover:shadow-[0_4px_12px_-4px_rgba(198,158,91,0.6)]"
+            )}
+            title="Coletar publicações do DataJud CNJ (fonte padrão)"
+          >
+            {coletaDatajud.running ? (
+              <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} />
+            ) : (
+              <RefreshCw className="h-3 w-3" strokeWidth={1.75} />
+            )}
+            {coletaDatajud.running ? "Coletando…" : "Coletar DataJud"}
           </Button>
         </CardAction>
       </CardHeader>
 
-      {/* Erro de start */}
-      {coleta.error && !coleta.running && (
+      {startError && !anyRunning && (
         <div className="border-b border-erro/20 bg-erro/5 px-5 py-2.5 text-[0.8125rem] text-erro">
-          {coleta.error}
+          {startError}
         </div>
       )}
 
-      {/* Painel ao vivo enquanto coleta roda */}
-      {coleta.running && (
-        <ColetaLogPanel entries={coleta.entries} />
-      )}
-
-      {/* Resumo apos terminar */}
-      {showResumoBanner && coleta.resumo && !coleta.running && (
-        <ColetaResumoBanner
-          resumo={coleta.resumo}
-          onDismiss={() => setShowResumoBanner(false)}
+      {activeColeta && (
+        <ColetaLogPanel
+          source={activeColeta.source}
+          entries={activeColeta.entries}
         />
       )}
 
-      {/* Form manual (inline, simples) */}
+      {lastFinished && !anyRunning && (
+        <ColetaResumoBanner
+          source={lastFinished.source}
+          resumo={lastFinished.resumo}
+          onDismiss={() => setLastFinished(null)}
+        />
+      )}
+
       {showManualForm && (
         <ManualMovForm
           processoId={processoId}
@@ -110,33 +164,40 @@ export function MovimentacoesCard({
         />
       )}
 
-      {/* Timeline de movs */}
       <MovsList movs={movimentacoes} />
     </Card>
   )
 }
 
 // --------------------------------------------------------------------------
-// Painel de log ao vivo
-// --------------------------------------------------------------------------
 
-function ColetaLogPanel({ entries }: { entries: ColetaLogEntry[] }) {
-  // Auto-scroll pro final conforme chegam entries novas
+const SOURCE_LABEL: Record<ColetaPublicacoesSource, string> = {
+  datajud: "DataJud",
+  djen: "DJEN",
+}
+
+function ColetaLogPanel({
+  source,
+  entries,
+}: {
+  source: ColetaPublicacoesSource
+  entries: ColetaLogEntry[]
+}) {
   const scrollRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const el = scrollRef.current
     if (el) el.scrollTop = el.scrollHeight
   }, [entries.length])
 
-  // Filtra so entries do datajud (reduz ruido se houver coletas paralelas)
-  const datajudEntries = entries.filter((e) => e.source === "datajud")
-  const ultimas = datajudEntries.slice(-20)
+  // Filtra so entries da fonte em andamento (reduz ruido)
+  const filtered = entries.filter((e) => e.source === source)
+  const ultimas = filtered.slice(-20)
 
   return (
     <div className="border-b border-dourado/25 bg-dourado/5 px-5 py-3">
       <div className="flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-dourado">
         <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-dourado" />
-        Coleta DataJud em andamento · {datajudEntries.length} eventos
+        Coleta {SOURCE_LABEL[source]} em andamento · {filtered.length} eventos
       </div>
       <div
         ref={scrollRef}
@@ -180,22 +241,25 @@ function levelColor(level: string): string {
 }
 
 // --------------------------------------------------------------------------
-// Banner de resumo pos-coleta
-// --------------------------------------------------------------------------
 
 function ColetaResumoBanner({
+  source,
   resumo,
   onDismiss,
 }: {
-  resumo: NonNullable<ReturnType<typeof useColetaDatajud>["resumo"]>
+  source: ColetaPublicacoesSource
+  resumo: ResumoGenerico
   onDismiss: () => void
 }) {
   const novidades = resumo.com_novidade
   const novasMovs = resumo.novas_movimentacoes.length
   const erros = resumo.erros.length
+  const consultadosLabel =
+    source === "datajud"
+      ? `${resumo.consultados ?? 0} tribunais`
+      : `${resumo.oabs_consultadas ?? 0} OABs`
 
-  const tone =
-    erros > 0 ? "warn" : novidades > 0 ? "success" : "neutral"
+  const tone = erros > 0 ? "warn" : novidades > 0 ? "success" : "neutral"
 
   return (
     <div
@@ -219,10 +283,10 @@ function ColetaResumoBanner({
       />
       <div className="min-w-0 flex-1">
         <div className="font-sans font-semibold text-foreground">
-          Coleta concluída
+          Coleta {SOURCE_LABEL[source]} concluída
         </div>
         <div className="mt-0.5 text-muted">
-          {resumo.consultados} tribunais consultados ·{" "}
+          {consultadosLabel} ·{" "}
           <strong className="text-foreground">{novidades}</strong> processo
           {novidades === 1 ? "" : "s"} com novidade ·{" "}
           <strong className="text-foreground">{novasMovs}</strong>{" "}
@@ -250,8 +314,6 @@ function ColetaResumoBanner({
 }
 
 // --------------------------------------------------------------------------
-// Form manual simples (data + tipo + descricao)
-// --------------------------------------------------------------------------
 
 function ManualMovForm({
   processoId,
@@ -268,7 +330,9 @@ function ManualMovForm({
   const mutation = useMutation({
     mutationFn: (input: MovimentacaoInput) => criarMovimentacao(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.processo(processoId) })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.processo(processoId),
+      })
       queryClient.invalidateQueries({ queryKey: queryKeys.stats })
       setDescricao("")
       setTipo("")
@@ -371,8 +435,6 @@ function Field({
 }
 
 // --------------------------------------------------------------------------
-// Lista de movs (timeline)
-// --------------------------------------------------------------------------
 
 function MovsList({ movs }: { movs: Movimentacao[] }) {
   if (movs.length === 0) {
@@ -383,7 +445,11 @@ function MovsList({ movs }: { movs: Movimentacao[] }) {
           strokeWidth={1.5}
         />
         <p className="font-display italic text-muted text-base">
-          Sem movimentações ainda. Clique em <strong className="not-italic text-foreground">Coletar DataJud</strong> pra importar do CNJ.
+          Sem movimentações ainda. Clique em{" "}
+          <strong className="not-italic text-foreground">Coletar DataJud</strong>{" "}
+          pra importar do CNJ ou{" "}
+          <strong className="not-italic text-foreground">DJEN</strong> pra
+          buscar por OAB.
         </p>
       </div>
     )
