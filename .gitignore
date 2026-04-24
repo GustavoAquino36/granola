@@ -33,7 +33,9 @@ granola/data/*.bak.*
 granola/uploads/
 granola/data/uploads/
 **/uploads/
-documentos/
+# Bloqueia pastas com docs reais soltas no projeto, sem afetar features do frontend
+/documentos/
+/docs-clientes/
 
 # ---- Perfis Chromium (sessoes logadas em tribunais) ----
 chromium-profile-*/
