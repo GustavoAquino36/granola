@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router-dom"
 import { AppShell } from "@/components/layout/AppShell"
+import { AgendaPage } from "@/pages/AgendaPage"
 import { AgoraPage } from "@/pages/AgoraPage"
 import { ClienteDetailPage } from "@/pages/ClienteDetailPage"
 import { ClientesPage } from "@/pages/ClientesPage"
@@ -71,7 +72,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "/agenda",
-            element: <PlaceholderPage title="Agenda" phase={5} />,
+            element: <AgendaPage />,
           },
           {
             path: "/financeiro",
