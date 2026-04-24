@@ -1444,18 +1444,43 @@ class GranolaDB:
         self.conn.commit()
 
     def get_kanban(self) -> dict:
+        """Monta o board: cada coluna recebe os processos cuja kanban_coluna casa.
+        Filtro de status: exclui apenas estados finais (encerrado/arquivado/excluido).
+        Estados como 'ativo' e 'em_andamento' aparecem normalmente.
+
+        Processos com kanban_coluna invalida (nao casa com nenhuma coluna registrada)
+        caem na primeira coluna por ordem — evita que dados antigos com kanban_coluna
+        legada sumam do board sem aviso.
+        """
         colunas = self.listar_kanban_colunas()
+        if not colunas:
+            return {"colunas": []}
+
+        # Set de keys validas pra detectar orphans
+        keys_validas = {c["key"] for c in colunas}
+        primeira_coluna = colunas[0]["key"]
+
         result = []
         for col in colunas:
-            procs = self.conn.execute(
-                """SELECT p.id, p.numero_cnj, p.titulo, p.area, p.fase, p.kanban_coluna,
+            # Processos atribuidos diretamente a essa coluna
+            base_query = """SELECT p.id, p.numero_cnj, p.titulo, p.area, p.fase, p.kanban_coluna,
                           p.criado_em, c.nome as cliente_nome
                    FROM granola_processos p
                    LEFT JOIN granola_clientes c ON c.id = p.cliente_id
-                   WHERE p.kanban_coluna = ? AND p.status = 'ativo'
-                   ORDER BY p.atualizado_em DESC""",
-                (col["key"],)
-            ).fetchall()
+                   WHERE p.status NOT IN ('encerrado', 'arquivado', 'excluido')
+                     AND """
+            if col["key"] == primeira_coluna:
+                # Primeira coluna tambem recebe orphans (kanban_coluna nao casa nenhuma key)
+                placeholders = ",".join(["?"] * len(keys_validas))
+                procs = self.conn.execute(
+                    base_query + f"(p.kanban_coluna = ? OR p.kanban_coluna IS NULL OR p.kanban_coluna NOT IN ({placeholders})) ORDER BY p.atualizado_em DESC",
+                    (col["key"], *keys_validas)
+                ).fetchall()
+            else:
+                procs = self.conn.execute(
+                    base_query + "p.kanban_coluna = ? ORDER BY p.atualizado_em DESC",
+                    (col["key"],)
+                ).fetchall()
             result.append({
                 "key": col["key"],
                 "label": col["label"],
