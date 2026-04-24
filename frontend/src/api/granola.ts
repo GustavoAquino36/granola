@@ -4,7 +4,13 @@ import type {
   ClienteDetail,
   ClienteInput,
   ClientesResponse,
+  ColetaDatajudStatus,
+  ColetaLogResponse,
+  MovimentacaoInput,
+  ParteInput,
   PrazosResponse,
+  ProcessoDetail,
+  ProcessoInput,
   ProcessosResponse,
   Stats,
 } from "@/types/domain"
@@ -102,10 +108,100 @@ export async function unarchiveCliente(id: number): Promise<{ id: number }> {
 }
 
 // --------------------------------------------------------------------------
-// Processos — /api/granola/processos
+// Processos — /api/granola/processos?cliente_id=&status=&area=&busca=&limite=
 // --------------------------------------------------------------------------
-export async function fetchProcessos() {
-  return apiGet<ProcessosResponse>("/api/granola/processos")
+export interface ListarProcessosParams {
+  clienteId?: number
+  status?: string
+  area?: string
+  busca?: string
+  limite?: number
+}
+
+export async function fetchProcessos(params: ListarProcessosParams = {}) {
+  const qs = new URLSearchParams()
+  if (params.clienteId !== undefined) qs.set("cliente_id", String(params.clienteId))
+  if (params.status) qs.set("status", params.status)
+  if (params.area) qs.set("area", params.area)
+  if (params.busca) qs.set("busca", params.busca)
+  if (params.limite) qs.set("limite", String(params.limite))
+  const suffix = qs.toString() ? `?${qs.toString()}` : ""
+  return apiGet<ProcessosResponse>(`/api/granola/processos${suffix}`)
+}
+
+/** GET /api/granola/processo?id=X — detalhe com cliente + partes + movs + prazos. */
+export async function fetchProcessoById(id: number): Promise<ProcessoDetail> {
+  const res = await apiGet<{ processo: ProcessoDetail }>(
+    `/api/granola/processo?id=${id}`
+  )
+  return res.processo
+}
+
+/** POST /api/granola/processo/upsert — cria (sem id) ou atualiza (com id). */
+export async function upsertProcesso(
+  input: ProcessoInput & { id?: number }
+): Promise<{ id: number }> {
+  return apiPost<{ id: number }>("/api/granola/processo/upsert", input)
+}
+
+/** POST /api/granola/processo/status — muda status do processo (ativo/suspenso/encerrado). */
+export async function updateProcessoStatus(id: number, status: string) {
+  return apiPost<{ status: "ok" }>("/api/granola/processo/status", {
+    id,
+    status,
+  })
+}
+
+/** Arquiva via upsert mudando status. Convencao: 'arquivado' eh soft, mantem historico. */
+export async function archiveProcesso(id: number) {
+  return updateProcessoStatus(id, "arquivado")
+}
+
+export async function unarchiveProcesso(id: number) {
+  return updateProcessoStatus(id, "ativo")
+}
+
+// --------------------------------------------------------------------------
+// Partes do processo — /api/granola/parte/(upsert|delete)
+// --------------------------------------------------------------------------
+export async function upsertParte(
+  input: ParteInput & { id?: number }
+): Promise<{ id: number }> {
+  return apiPost<{ id: number }>("/api/granola/parte/upsert", input)
+}
+
+export async function deleteParte(id: number) {
+  return apiPost<{ status: "ok" }>("/api/granola/parte/delete", { id })
+}
+
+// --------------------------------------------------------------------------
+// Movimentacoes — /api/granola/movimentacao/criar (manual)
+// --------------------------------------------------------------------------
+export async function criarMovimentacao(input: MovimentacaoInput) {
+  return apiPost<{ id: number }>("/api/granola/movimentacao/criar", input)
+}
+
+// --------------------------------------------------------------------------
+// Coleta DataJud (real-time via polling de log + status)
+// --------------------------------------------------------------------------
+
+/** Dispara a coleta DataJud em thread do backend. Retorna imediato. */
+export async function startColetaDatajud() {
+  return apiPost<{ status: "iniciada"; msg: string }>(
+    "/api/granola/publicacoes/coletar-datajud"
+  )
+}
+
+/** Status consolidado da ultima coleta DataJud (fim=null enquanto rodando). */
+export async function fetchColetaDatajudStatus() {
+  return apiGet<ColetaDatajudStatus>("/api/granola/publicacoes-datajud/status")
+}
+
+/** Busca log incremental desde o cursor `since`. Retorna {entries, latest}. */
+export async function fetchColetaLog(since: number) {
+  return apiGet<ColetaLogResponse>(
+    `/api/granola/publicacoes/log?since=${since}`
+  )
 }
 
 // --------------------------------------------------------------------------
@@ -136,7 +232,12 @@ export const queryKeys = {
   clientes: (params: ListarClientesParams = {}) =>
     ["granola", "clientes", params] as const,
   cliente: (id: number) => ["granola", "cliente", id] as const,
-  processos: () => ["granola", "processos"] as const,
+  processos: (params: ListarProcessosParams = {}) =>
+    ["granola", "processos", params] as const,
+  processo: (id: number) => ["granola", "processo", id] as const,
   agenda: (params: ListarAgendaParams = {}) =>
     ["granola", "agenda", params] as const,
+  coletaDatajudStatus: ["granola", "coleta", "datajud", "status"] as const,
+  coletaLog: (since: number) =>
+    ["granola", "coleta", "log", since] as const,
 }

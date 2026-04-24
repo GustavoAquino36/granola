@@ -122,6 +122,39 @@ export interface ProcessosResponse {
   total: number
 }
 
+/** Resposta de /api/granola/processo?id=X — Processo + joins do detalhe. */
+export interface ProcessoDetail extends Processo {
+  /** Preenchido pelo backend: dados basicos do cliente (id/nome/cpf_cnpj). */
+  cliente: { id: number; nome: string; cpf_cnpj: string | null } | null
+  partes: Parte[]
+  movimentacoes: Movimentacao[]
+  prazos: Prazo[]
+}
+
+/** Shape do body pro upsert de processo. */
+export type ProcessoInput = Partial<
+  Omit<Processo, "id" | "criado_em" | "atualizado_em" | "cliente_nome">
+> & {
+  /** Em criacao eh obrigatorio; em update nao precisa se nao for mudar. */
+  cliente_id?: number | null
+}
+
+/** Shape do body pro upsert de parte. */
+export type ParteInput = Partial<Omit<Parte, "id">> & {
+  processo_id: number
+  nome: string
+}
+
+/** Shape do body pro criar de movimentacao manual. */
+export type MovimentacaoInput = {
+  processo_id: number
+  tipo?: string
+  descricao: string
+  data_movimento: string
+  fonte?: "manual"
+  gera_prazo?: 0 | 1
+}
+
 // --------------------------------------------------------------------------
 // PARTES (do processo)
 // --------------------------------------------------------------------------
@@ -278,6 +311,59 @@ export interface AgendaEvent {
   google_event_id: string | null
   criado_em: string
   atualizado_em: string | null
+}
+
+// --------------------------------------------------------------------------
+// COLETA DE PUBLICAÇÕES (DataJud / DJEN / e-SAJ / PJe)
+// --------------------------------------------------------------------------
+
+export type ColetaSource = "datajud" | "djen" | "esaj" | "pje" | string
+export type ColetaLogLevel = "info" | "warn" | "error" | "success" | string
+
+/** Entry do buffer de log vindo de /api/granola/publicacoes/log?since=N. */
+export interface ColetaLogEntry {
+  seq: number
+  ts: string
+  source: ColetaSource
+  level: ColetaLogLevel
+  msg: string
+  processo: string | null
+}
+
+export interface ColetaLogResponse {
+  entries: ColetaLogEntry[]
+  latest: number
+}
+
+/** Resumo consolidado do resultado da coleta DataJud (fim preenchido = terminou). */
+export interface ColetaDatajudResumo {
+  total: number
+  elegiveis: number
+  tribunais: number
+  consultados: number
+  com_novidade: number
+  novas_movimentacoes: Array<{
+    processo_id: number
+    numero_cnj: string
+    titulo: string
+    data: string
+    descricao: string
+    codigo: string | null
+  }>
+  nao_encontrados: Array<{
+    processo_id: number
+    numero_cnj: string
+    titulo: string
+    tribunal_alias: string
+  }>
+  erros: string[]
+  inicio: string
+  fim: string | null
+}
+
+export interface ColetaDatajudStatus {
+  ultima_coleta: string | null
+  resumo: ColetaDatajudResumo | null
 }
 
 // --------------------------------------------------------------------------
