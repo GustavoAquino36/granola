@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { MovimentacoesCard } from "@/components/features/processos/MovimentacoesCard"
 
 export function ProcessoDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -78,14 +79,12 @@ export function ProcessoDetailPage() {
             onEdit={() => setShowEditDialog(true)}
           />
 
-          {/* Placeholder movimentacoes — vem no commit 3A.4 */}
-          <Card className="mt-5 gap-0 rounded-card border-dashed py-0">
-            <CardContent className="px-5 py-6 text-center">
-              <p className="font-display italic text-muted text-base">
-                Movimentacoes + coleta DataJud real-time chegam no commit 3A.4.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="mt-5">
+            <MovimentacoesCard
+              processoId={data.id}
+              movimentacoes={data.movimentacoes}
+            />
+          </div>
 
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
             <PartesCard partes={data.partes} />
