@@ -155,7 +155,7 @@ export function KanbanPage() {
               ))}
             </div>
 
-            <DragOverlay>
+            <DragOverlay dropAnimation={null}>
               {activeId !== null && cardById.has(activeId) ? (
                 <CardView card={cardById.get(activeId)!.card} dragging />
               ) : null}
