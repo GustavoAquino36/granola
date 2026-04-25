@@ -100,7 +100,7 @@ export function ClientesPage() {
   })
 
   return (
-    <div className="px-8 py-8 lg:px-10 lg:py-10">
+    <div className="px-4 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
       {/* ================= HEADER ================= */}
       <header className="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
         <div className="min-w-0">
@@ -115,9 +115,14 @@ export function ClientesPage() {
         </div>
 
         <div className="flex shrink-0 gap-2">
-          <Button variant="outline" size="default" className="gap-1.5 rounded-card">
+          <Button
+            variant="ghost"
+            size="default"
+            className="gap-1.5 rounded-card text-muted hover:text-foreground"
+            title="Exportar CSV"
+          >
             <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
-            Exportar CSV
+            <span className="hidden sm:inline">Exportar</span>
           </Button>
           <Button
             size="default"
@@ -128,7 +133,8 @@ export function ClientesPage() {
             onClick={() => setShowNewDialog(true)}
           >
             <Plus className="h-3.5 w-3.5" strokeWidth={2} />
-            Adicionar cliente
+            <span className="hidden sm:inline">Adicionar cliente</span>
+            <span className="sm:hidden">Novo</span>
           </Button>
         </div>
       </header>

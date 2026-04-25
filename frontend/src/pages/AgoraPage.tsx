@@ -38,7 +38,7 @@ export function AgoraPage() {
   }, [now])
 
   return (
-    <div className="px-8 py-8 lg:px-10 lg:py-10">
+    <div className="px-4 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
       {/* ================= HERO ================= */}
       <header className="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
         <div className="min-w-0">

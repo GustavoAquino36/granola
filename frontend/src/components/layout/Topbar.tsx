@@ -4,6 +4,7 @@ import {
   Bell,
   KeyRound,
   LogOut,
+  Menu,
   Moon,
   Search,
   Settings,
@@ -30,7 +31,12 @@ const LABELS: Record<string, string> = {
   "/config": "Configurações",
 }
 
-export function Topbar() {
+interface TopbarProps {
+  /** Callback do botao hamburguer no mobile — handled pelo AppShell. */
+  onOpenMobileNav?: () => void
+}
+
+export function Topbar({ onOpenMobileNav }: TopbarProps = {}) {
   const { pathname } = useLocation()
   const params = useParams()
   const segments = pathname.split("/").filter(Boolean)
@@ -39,12 +45,29 @@ export function Topbar() {
   const hasDetail = Boolean(params.id)
 
   return (
-    <header className="flex h-[54px] shrink-0 items-center gap-3.5 border-b border-border bg-surface px-[22px]">
+    <header className="flex h-[54px] shrink-0 items-center gap-2 border-b border-border bg-surface px-3 sm:gap-3.5 sm:px-[22px]">
+      {/* Botao hamburguer — so em mobile (<md) */}
+      {onOpenMobileNav && (
+        <button
+          type="button"
+          aria-label="Abrir menu"
+          onClick={onOpenMobileNav}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-pill bg-transparent text-muted transition-colors hover:bg-dourado/10 hover:text-foreground md:hidden"
+        >
+          <Menu className="h-4.5 w-4.5" strokeWidth={1.75} />
+        </button>
+      )}
+
       <Breadcrumb>
-        <Link to="/agora" className="transition-colors hover:text-foreground">
+        <Link
+          to="/agora"
+          className="hidden transition-colors hover:text-foreground sm:inline"
+        >
           Início
         </Link>
-        <Sep />
+        <span className="hidden sm:inline">
+          <Sep />
+        </span>
         <span className={cn(hasDetail ? "text-muted" : "font-medium text-foreground")}>
           {baseLabel}
         </span>
@@ -56,6 +79,8 @@ export function Topbar() {
         )}
       </Breadcrumb>
 
+      {/* SearchBox so em desktop (lg+) — em mobile fica no menu hamburguer
+          ou em pages especificas. Evita topbar entupido em <md. */}
       <SearchBox />
 
       <ThemeToggle />
@@ -75,7 +100,7 @@ function ThemeToggle() {
       onClick={toggle}
       aria-label={isDark ? "Mudar para tema claro" : "Mudar para tema escuro"}
       title={isDark ? "Tema escuro ativo" : "Tema claro ativo"}
-      className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-pill bg-transparent text-muted transition-colors duration-[180ms] hover:bg-dourado/10 hover:text-foreground"
+      className="grid h-9 w-9 sm:h-8 sm:w-8 shrink-0 place-items-center rounded-pill bg-transparent text-muted transition-colors duration-[180ms] hover:bg-dourado/10 hover:text-foreground"
     >
       {isDark ? (
         <Sun className="h-4 w-4" strokeWidth={1.75} />
@@ -111,7 +136,10 @@ function SearchBox() {
   return (
     <div
       className={cn(
-        "ml-auto flex w-[320px] items-center gap-2 rounded-pill border border-border bg-surface-alt px-3 py-1.5 text-muted transition-all duration-[180ms]",
+        // Esconde em mobile pequeno (<sm), reaparece em sm+ com largura
+        // adaptativa. Em telas <sm o user usa o menu pra navegar e os
+        // filtros internos de cada page pra buscar.
+        "ml-auto hidden flex-1 items-center gap-2 rounded-pill border border-border bg-surface-alt px-3 py-1.5 text-muted transition-all duration-[180ms] sm:flex sm:max-w-[280px] md:max-w-[320px]",
         "focus-within:border-dourado focus-within:bg-surface focus-within:shadow-[0_0_0_3px_rgba(198,158,91,0.12)]"
       )}
     >
@@ -121,7 +149,7 @@ function SearchBox() {
         placeholder="Buscar processo, cliente, peça…"
         className="min-w-0 flex-1 border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted"
       />
-      <kbd className="rounded-[4px] border border-border bg-background px-1.5 py-px font-mono text-[0.7rem] text-muted">
+      <kbd className="hidden rounded-[4px] border border-border bg-background px-1.5 py-px font-mono text-[0.7rem] text-muted lg:inline">
         Ctrl K
       </kbd>
     </div>
@@ -133,7 +161,10 @@ function IconButton({ label, Icon }: { label: string; Icon: LucideIcon }) {
     <button
       type="button"
       aria-label={label}
-      className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-pill bg-transparent text-muted transition-colors duration-[180ms] hover:bg-dourado/10 hover:text-foreground"
+      // Touch target 36x36 em mobile (proximo do WCAG 44 mas equilibrando
+      // densidade da topbar) e 30x30 em desktop. Padding interno preserva
+      // visual elegante em ambos.
+      className="grid h-9 w-9 shrink-0 place-items-center rounded-pill bg-transparent text-muted transition-colors duration-[180ms] hover:bg-dourado/10 hover:text-foreground sm:h-8 sm:w-8"
     >
       <Icon className="h-4 w-4" strokeWidth={1.75} />
     </button>
@@ -196,7 +227,7 @@ function UserMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
         title={title}
-        className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full bg-dourado font-sans text-xs font-bold text-tinta transition-transform duration-[180ms] hover:scale-105"
+        className="grid h-9 w-9 sm:h-8 sm:w-8 shrink-0 place-items-center rounded-full bg-dourado font-sans text-xs font-bold text-tinta transition-transform duration-[180ms] hover:scale-105"
       >
         {initials}
       </button>

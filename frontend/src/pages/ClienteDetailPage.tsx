@@ -17,6 +17,7 @@ import {
   queryKeys,
   unarchiveCliente,
 } from "@/api/granola"
+import { ApiError } from "@/api/client"
 import type { ClienteDetail, ClienteProcessoSummary } from "@/types/domain"
 import { formatBRL, formatCpfCnpj, initialsFrom, truncate } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -83,7 +84,7 @@ export function ClienteDetailPage() {
   }
 
   return (
-    <div className="px-8 py-8 lg:px-10 lg:py-10">
+    <div className="px-4 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
       {/* Breadcrumb up */}
       <button
         type="button"
@@ -97,11 +98,7 @@ export function ClienteDetailPage() {
       {isLoading ? (
         <DetailLoading />
       ) : isError || !data ? (
-        <div className="rounded-card border border-erro/20 bg-erro/5 px-4 py-6 text-sm text-erro">
-          {error instanceof Error
-            ? error.message
-            : "Não foi possível carregar o cliente."}
-        </div>
+        <NotFoundOrError error={error} />
       ) : (
         <>
           <DetailHead
@@ -539,5 +536,42 @@ function DetailLoading() {
         ))}
       </div>
     </>
+  )
+}
+
+// --------------------------------------------------------------------------
+// Not found / error elegante
+// --------------------------------------------------------------------------
+
+function NotFoundOrError({ error }: { error: Error | unknown | null }) {
+  const navigate = useNavigate()
+  const is404 = error instanceof ApiError && error.status === 404
+  return (
+    <div className="rounded-card border border-border bg-surface px-5 py-12 text-center">
+      <p className="font-display italic text-lg text-muted">
+        {is404
+          ? "Cliente não encontrado."
+          : "Não foi possível carregar o cliente."}
+      </p>
+      {is404 && (
+        <p className="mt-2 text-sm text-muted">
+          O cliente pode ter sido apagado ou o link está incorreto.
+        </p>
+      )}
+      {!is404 && error instanceof Error && (
+        <p className="mt-2 font-mono text-[0.78rem] text-erro">{error.message}</p>
+      )}
+      <div className="mt-5">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate("/clientes")}
+          className="gap-1.5"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.75} />
+          Voltar pra lista
+        </Button>
+      </div>
+    </div>
   )
 }

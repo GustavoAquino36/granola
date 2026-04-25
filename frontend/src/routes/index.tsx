@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- arquivo de roteamento; lazy() devolve componentes mas o roteador nao eh hot-reload-friendly */
 import { lazy, Suspense } from "react"
 import { createBrowserRouter, Navigate } from "react-router-dom"
 import { AppShell } from "@/components/layout/AppShell"

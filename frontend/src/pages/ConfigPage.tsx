@@ -73,7 +73,7 @@ export function ConfigPage() {
   }
 
   return (
-    <div className="px-8 py-8 lg:px-10 lg:py-10">
+    <div className="px-4 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
       <header className="mb-6">
         <h1 className="font-display text-3xl font-normal leading-[1.15] text-foreground md:text-[2.1rem]">
           Configurações

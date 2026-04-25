@@ -49,11 +49,17 @@ const SECTIONS: NavSection[] = [
   },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  /** Callback quando o usuario clica num link — usado em mobile pra
+   *  fechar o drawer. Em desktop fica undefined. */
+  onNavigate?: () => void
+}
+
+export function Sidebar({ onNavigate }: SidebarProps = {}) {
   return (
     <aside
       className={cn(
-        "relative flex w-[240px] flex-col bg-roxo pb-6 pt-5 text-marfim",
+        "relative flex h-full w-full flex-col bg-roxo pb-6 pt-5 text-marfim md:w-[240px]",
         // Filete dourado vertical separando sidebar do conteudo
         "after:pointer-events-none after:absolute after:right-0 after:top-0 after:h-full after:w-px after:bg-dourado/20"
       )}
@@ -73,14 +79,14 @@ export function Sidebar() {
       </div>
 
       {/* Navegacao */}
-      <nav aria-label="Principal" className="flex-1">
+      <nav aria-label="Principal" className="flex-1 overflow-y-auto">
         {SECTIONS.map((section) => (
           <div key={section.label} className="mt-1.5">
             <div className="px-5 pb-1 pt-3 font-sans text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-marfim/40">
               {section.label}
             </div>
             {section.items.map((item) => (
-              <SidebarLink key={item.to} {...item} />
+              <SidebarLink key={item.to} {...item} onNavigate={onNavigate} />
             ))}
           </div>
         ))}
@@ -98,11 +104,18 @@ export function Sidebar() {
   )
 }
 
-function SidebarLink({ to, icon: Icon, label, badge }: NavItem) {
+function SidebarLink({
+  to,
+  icon: Icon,
+  label,
+  badge,
+  onNavigate,
+}: NavItem & { onNavigate?: () => void }) {
   return (
     <NavLink
       to={to}
       end={to === "/agora"}
+      onClick={onNavigate}
       className={({ isActive }) =>
         cn(
           "flex select-none items-center gap-[11px] border-l-[3px] px-[17px] py-2.5 font-sans text-sm font-medium transition-colors duration-[180ms]",

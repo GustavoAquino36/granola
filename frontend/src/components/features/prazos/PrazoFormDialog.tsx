@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ProcessoSearchSelect } from "@/components/shared/ProcessoSearchSelect"
+import { useConfirmCloseOnDirty } from "@/lib/use-confirm-close"
 import { cn } from "@/lib/utils"
 
 // --------------------------------------------------------------------------
@@ -134,8 +135,13 @@ export function PrazoFormDialog({
     mutation.mutate(values)
   }
 
+  const handleOpenChange = useConfirmCloseOnDirty(
+    form.formState.isDirty && !mutation.isPending,
+    onOpenChange
+  )
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[560px]">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl font-normal">

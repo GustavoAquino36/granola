@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Loader2 } from "lucide-react"
 import { upsertCliente, queryKeys } from "@/api/granola"
 import type { Cliente, ClienteInput, TipoPessoa } from "@/types/domain"
+import { useConfirmCloseOnDirty } from "@/lib/use-confirm-close"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -170,8 +171,13 @@ export function ClienteFormDialog({
     mutation.mutate(values)
   }
 
+  const handleOpenChange = useConfirmCloseOnDirty(
+    form.formState.isDirty && !mutation.isPending,
+    onOpenChange
+  )
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[640px]">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl font-normal">
