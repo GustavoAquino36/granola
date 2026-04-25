@@ -18,6 +18,10 @@ import type {
   GcalStatus,
   GcalSyncStats,
   KanbanResponse,
+  Modelo,
+  ModeloAnexoUploadInput,
+  ModeloInput,
+  ModeloResumo,
   MovimentacaoInput,
   ParteInput,
   PendingEditsResponse,
@@ -403,6 +407,65 @@ export async function syncGcal() {
 }
 
 // --------------------------------------------------------------------------
+// Modelos (peças prontas / templates) — /api/granola/modelo(s)
+// --------------------------------------------------------------------------
+
+export interface ListarModelosParams {
+  busca?: string
+  categoria?: string
+}
+
+export async function fetchModelos(params: ListarModelosParams = {}) {
+  const qs = new URLSearchParams()
+  if (params.busca) qs.set("busca", params.busca)
+  if (params.categoria) qs.set("categoria", params.categoria)
+  const suffix = qs.toString() ? `?${qs.toString()}` : ""
+  return apiGet<{ modelos: ModeloResumo[]; total: number }>(
+    `/api/granola/modelos${suffix}`
+  )
+}
+
+export async function fetchModeloById(id: number): Promise<Modelo> {
+  const res = await apiGet<{ modelo: Modelo }>(
+    `/api/granola/modelo?id=${id}`
+  )
+  return res.modelo
+}
+
+/** POST /api/granola/modelo/upsert — cria (sem id) ou atualiza (com id).
+ *  Em update, backend incrementa versão automaticamente. */
+export async function upsertModelo(input: ModeloInput): Promise<{ id: number }> {
+  return apiPost<{ id: number; status: "ok" }>(
+    "/api/granola/modelo/upsert",
+    input
+  )
+}
+
+/** POST /api/granola/modelo/usar — incrementa contador de usos.
+ *  Chamado quando o usuário copia o conteúdo pra área de transferência. */
+export async function usarModelo(id: number) {
+  return apiPost<{ status: "ok" }>("/api/granola/modelo/usar", { id })
+}
+
+/** POST /api/granola/modelo/delete — admin-only no backend. */
+export async function deleteModelo(id: number) {
+  return apiPost<{ status: "ok" }>("/api/granola/modelo/delete", { id })
+}
+
+export async function uploadModeloAnexo(
+  input: ModeloAnexoUploadInput
+): Promise<{ id: number; caminho: string }> {
+  return apiPost<{ id: number; status: "ok"; caminho: string }>(
+    "/api/granola/modelo/anexo/upload",
+    input
+  )
+}
+
+export async function deleteModeloAnexo(id: number) {
+  return apiPost<{ status: "ok" }>("/api/granola/modelo/anexo/delete", { id })
+}
+
+// --------------------------------------------------------------------------
 // Admin — /api/admin/users + /api/admin/user/(criar|atualizar)
 // --------------------------------------------------------------------------
 
@@ -611,6 +674,9 @@ export const queryKeys = {
   audit: (limite: number) => ["granola", "audit", limite] as const,
   pendingEdits: ["granola", "pending"] as const,
   config: (key: string) => ["granola", "config", key] as const,
+  modelos: (params: ListarModelosParams = {}) =>
+    ["granola", "modelos", params] as const,
+  modelo: (id: number) => ["granola", "modelo", id] as const,
   coletaDatajudStatus: ["granola", "coleta", "datajud", "status"] as const,
   coletaDjenStatus: ["granola", "coleta", "djen", "status"] as const,
   coletaLog: (since: number) =>

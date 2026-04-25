@@ -602,6 +602,72 @@ export interface OabConfig {
 }
 
 // --------------------------------------------------------------------------
+// MODELOS (peças prontas / templates clonáveis)
+// --------------------------------------------------------------------------
+
+/** Áreas de atuação do direito padrão. Backend aceita qualquer string;
+ *  estas são as opções oferecidas no select e usadas como filtros. */
+export type CategoriaModelo =
+  | "trabalhista"
+  | "civel"
+  | "contratos"
+  | "tributario"
+  | "penal"
+  | "familia"
+  | "empresarial"
+  | "previdenciario"
+  | "consumidor"
+  | "outros"
+  | string
+
+/** Resumo do modelo na lista — sem o conteudo HTML completo. */
+export interface ModeloResumo {
+  id: number
+  nome: string
+  categoria: CategoriaModelo | null
+  descricao: string | null
+  tags: string | null
+  versao: number
+  usos: number
+  criado_em: string
+  atualizado_em: string | null
+  criado_por: string | null
+  total_anexos: number
+}
+
+/** Detalhe completo — inclui conteudo HTML (Tiptap) + lista de anexos. */
+export interface Modelo extends Omit<ModeloResumo, "total_anexos"> {
+  conteudo: string
+  anexos: ModeloAnexo[]
+}
+
+export interface ModeloAnexo {
+  id: number
+  modelo_id: number
+  nome: string
+  caminho: string
+  tamanho_bytes: number | null
+  hash_sha256: string | null
+  criado_em: string
+}
+
+/** Body de upsert (sem o id em create). */
+export interface ModeloInput {
+  id?: number
+  nome: string
+  categoria?: CategoriaModelo | null
+  descricao?: string | null
+  conteudo?: string
+  tags?: string | null
+}
+
+export interface ModeloAnexoUploadInput {
+  modelo_id: number
+  file: string // base64 stripped
+  nome: string
+}
+
+// --------------------------------------------------------------------------
 // COLETA DE PUBLICAÇÕES (DataJud / DJEN / e-SAJ / PJe)
 // --------------------------------------------------------------------------
 
