@@ -376,6 +376,33 @@ class GranolaHandler(http.server.SimpleHTTPRequestHandler):
             self._json_response({"documentos": docs, "total": len(docs)})
             return
 
+        # ---- Modelos (peças prontas) ----
+        if path == "/api/granola/modelos":
+            user = self._require_auth()
+            if not user:
+                return
+            mods = db.listar_modelos(
+                busca=_p("busca"),
+                categoria=_p("categoria"),
+            )
+            self._json_response({"modelos": mods, "total": len(mods)})
+            return
+
+        if path == "/api/granola/modelo":
+            user = self._require_auth()
+            if not user:
+                return
+            mid = _p("id")
+            if not mid:
+                self._json_response({"error": "id é obrigatório"}, 400)
+                return
+            modelo = db.get_modelo(int(mid))
+            if not modelo:
+                self._json_response({"error": "Modelo não encontrado"}, 404)
+                return
+            self._json_response({"modelo": modelo})
+            return
+
         # ---- Notificações ----
         if path == "/api/granola/notificacoes":
             user = self._require_auth()
@@ -1784,6 +1811,129 @@ class GranolaHandler(http.server.SimpleHTTPRequestHandler):
                 if fpath.exists():
                     fpath.unlink()
             db.delete_documento(int(did))
+            self._json_response({"status": "ok"})
+            return
+
+        # ---- Modelo: Upsert ----
+        if path == "/api/granola/modelo/upsert":
+            user = self._require_auth()
+            if not user:
+                return
+            if not data.get("nome"):
+                self._json_response({"error": "nome é obrigatório"}, 400)
+                return
+            try:
+                # Sanitiza: backend so aceita campos validos via _validate_columns
+                payload = {k: v for k, v in data.items() if k in {
+                    "id", "nome", "categoria", "descricao", "conteudo", "tags",
+                }}
+                # Garante conteudo vazio em vez de NULL
+                if "conteudo" not in payload:
+                    payload["conteudo"] = ""
+                mid = db.upsert_modelo(payload, autor=user.get("username"))
+                auth_db.log_action(
+                    user["id"], user["username"],
+                    "modelo_upsert" if data.get("id") else "modelo_criar",
+                    "granola", "modelo", mid, payload.get("nome", "")
+                )
+                self._json_response({"id": mid, "status": "ok"})
+            except Exception as e:
+                self._json_response({"error": self._safe_error(e, "modelo_upsert")}, 400)
+            return
+
+        # ---- Modelo: Usar (incrementa counter) ----
+        if path == "/api/granola/modelo/usar":
+            user = self._require_auth()
+            if not user:
+                return
+            mid = data.get("id")
+            if not mid:
+                self._json_response({"error": "id é obrigatório"}, 400)
+                return
+            db.incrementar_uso_modelo(int(mid))
+            self._json_response({"status": "ok"})
+            return
+
+        # ---- Modelo: Delete ----
+        if path == "/api/granola/modelo/delete":
+            user = self._require_admin()
+            if not user:
+                return
+            mid = data.get("id")
+            if not mid:
+                self._json_response({"error": "id é obrigatório"}, 400)
+                return
+            # Apaga arquivos físicos dos anexos antes do CASCADE no DB
+            anexos = db.listar_anexos_modelo(int(mid))
+            for ax in anexos:
+                if ax.get("caminho"):
+                    fpath = UPLOAD_DIR / ax["caminho"]
+                    if fpath.exists():
+                        fpath.unlink()
+            db.delete_modelo(int(mid))
+            auth_db.log_action(
+                user["id"], user["username"], "modelo_delete", "granola",
+                "modelo", int(mid)
+            )
+            self._json_response({"status": "ok"})
+            return
+
+        # ---- Modelo: Anexo Upload ----
+        if path == "/api/granola/modelo/anexo/upload":
+            user = self._require_auth()
+            if not user:
+                return
+            mid = data.get("modelo_id")
+            file_b64 = data.get("file")
+            nome = data.get("nome", "anexo")
+            if not mid:
+                self._json_response({"error": "modelo_id é obrigatório"}, 400)
+                return
+            if not file_b64:
+                self._json_response({"error": "file (base64) é obrigatório"}, 400)
+                return
+            if len(file_b64) > MAX_UPLOAD_BYTES * 4 // 3 + 4:
+                self._json_response({"error": "Arquivo excede 10MB"}, 413)
+                return
+            try:
+                file_bytes = base64.b64decode(file_b64)
+                UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+                ext = Path(nome).suffix or ".bin"
+                safe_name = secrets.token_hex(8) + ext
+                filepath = UPLOAD_DIR / safe_name
+                filepath.write_bytes(file_bytes)
+                file_hash = hashlib.sha256(file_bytes).hexdigest()
+                anexo_id = db.criar_anexo_modelo({
+                    "modelo_id": int(mid),
+                    "nome": nome,
+                    "caminho": safe_name,
+                    "tamanho_bytes": len(file_bytes),
+                    "hash_sha256": file_hash,
+                })
+                auth_db.log_action(
+                    user["id"], user["username"], "modelo_anexo_upload", "granola",
+                    "modelo_anexo", anexo_id, nome
+                )
+                self._json_response({"id": anexo_id, "status": "ok", "caminho": safe_name})
+            except Exception as e:
+                self._json_response({"error": self._safe_error(e, "modelo_anexo_upload")}, 400)
+            return
+
+        # ---- Modelo: Anexo Delete ----
+        if path == "/api/granola/modelo/anexo/delete":
+            user = self._require_auth()
+            if not user:
+                return
+            aid = data.get("id")
+            if not aid:
+                self._json_response({"error": "id é obrigatório"}, 400)
+                return
+            anexo = db.get_anexo_modelo(int(aid))
+            if anexo and anexo.get("caminho"):
+                fpath = UPLOAD_DIR / anexo["caminho"]
+                if fpath.exists():
+                    fpath.unlink()
+            db.delete_anexo_modelo(int(aid))
             self._json_response({"status": "ok"})
             return
 

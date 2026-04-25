@@ -84,6 +84,14 @@ _VALID_COLUMNS = {
     "granola_kanban_colunas": {
         "key", "label", "ordem", "cor",
     },
+    "granola_modelos": {
+        "id", "nome", "categoria", "descricao", "conteudo", "tags",
+        "versao", "usos", "criado_em", "atualizado_em", "criado_por",
+    },
+    "granola_modelo_anexos": {
+        "id", "modelo_id", "nome", "caminho",
+        "tamanho_bytes", "hash_sha256", "criado_em",
+    },
     "granola_pending_edits": {
         "id", "entity_type", "entity_id", "user_id", "username", "field",
         "old_value", "new_value", "status", "criado_em", "revisado_em", "revisado_por",
@@ -379,6 +387,35 @@ def init_db():
     INSERT OR IGNORE INTO granola_kanban_colunas VALUES ('recurso','Recurso',6,'#f97316');
     INSERT OR IGNORE INTO granola_kanban_colunas VALUES ('execucao','Execução',7,'#1a5c45');
     INSERT OR IGNORE INTO granola_kanban_colunas VALUES ('encerrado','Encerrado',8,'#6b7280');
+
+    -- ============================================================
+    --  GRANOLA — Modelos (peças prontas / templates clonáveis)
+    -- ============================================================
+    CREATE TABLE IF NOT EXISTS granola_modelos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        categoria TEXT,
+        descricao TEXT,
+        conteudo TEXT NOT NULL DEFAULT '',
+        tags TEXT,
+        versao INTEGER DEFAULT 1,
+        usos INTEGER DEFAULT 0,
+        criado_em TEXT NOT NULL,
+        atualizado_em TEXT,
+        criado_por TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_modelos_categoria ON granola_modelos(categoria);
+
+    CREATE TABLE IF NOT EXISTS granola_modelo_anexos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        modelo_id INTEGER NOT NULL REFERENCES granola_modelos(id) ON DELETE CASCADE,
+        nome TEXT NOT NULL,
+        caminho TEXT NOT NULL,
+        tamanho_bytes INTEGER,
+        hash_sha256 TEXT,
+        criado_em TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_modelo_anexos_modelo ON granola_modelo_anexos(modelo_id);
 
     -- ============================================================
     --  GRANOLA — Pending Edits (Approval Workflow)
@@ -1489,6 +1526,100 @@ class GranolaDB:
                 "cards": [dict(r) for r in procs],
             })
         return {"colunas": result}
+
+    # ============================================================
+    #  MODELOS (peças prontas / templates)
+    # ============================================================
+
+    def listar_modelos(self, busca: str = None, categoria: str = None) -> list[dict]:
+        """Lista resumida — sem o conteúdo HTML, só metadata + counts.
+        Pra exibir na grade. O detalhe completo vem de get_modelo."""
+        query = """SELECT m.id, m.nome, m.categoria, m.descricao, m.tags,
+                          m.versao, m.usos, m.criado_em, m.atualizado_em, m.criado_por,
+                          (SELECT COUNT(*) FROM granola_modelo_anexos WHERE modelo_id = m.id) as total_anexos
+                   FROM granola_modelos m"""
+        wheres = []
+        params = []
+        if categoria:
+            wheres.append("m.categoria = ?")
+            params.append(categoria)
+        if busca:
+            wheres.append("(m.nome LIKE ? OR m.descricao LIKE ? OR m.tags LIKE ?)")
+            like = f"%{busca}%"
+            params.extend([like, like, like])
+        if wheres:
+            query += " WHERE " + " AND ".join(wheres)
+        query += " ORDER BY m.atualizado_em DESC, m.criado_em DESC"
+        rows = self.conn.execute(query, params).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_modelo(self, modelo_id: int) -> dict | None:
+        """Detalhe completo: modelo + lista de anexos."""
+        row = self.conn.execute(
+            "SELECT * FROM granola_modelos WHERE id = ?", (modelo_id,)
+        ).fetchone()
+        if not row:
+            return None
+        m = dict(row)
+        anexos = self.conn.execute(
+            "SELECT * FROM granola_modelo_anexos WHERE modelo_id = ? ORDER BY criado_em DESC",
+            (modelo_id,)
+        ).fetchall()
+        m["anexos"] = [dict(a) for a in anexos]
+        return m
+
+    def upsert_modelo(self, dados: dict, autor: str = None) -> int:
+        """Cria (sem id) ou atualiza (com id). Em update, incrementa versão automaticamente."""
+        modelo_id = dados.pop("id", None)
+        now = self._now()
+        if modelo_id:
+            # Update — incrementa versão
+            atual = self.conn.execute(
+                "SELECT versao FROM granola_modelos WHERE id = ?", (modelo_id,)
+            ).fetchone()
+            if atual:
+                dados["versao"] = (atual["versao"] or 1) + 1
+            dados["atualizado_em"] = now
+            self._update("granola_modelos", modelo_id, dados)
+            return modelo_id
+        # Insert
+        dados["criado_em"] = now
+        dados["atualizado_em"] = now
+        if autor and "criado_por" not in dados:
+            dados["criado_por"] = autor
+        return self._insert("granola_modelos", dados)
+
+    def incrementar_uso_modelo(self, modelo_id: int):
+        self.conn.execute(
+            "UPDATE granola_modelos SET usos = usos + 1 WHERE id = ?", (modelo_id,)
+        )
+        self.conn.commit()
+
+    def delete_modelo(self, modelo_id: int):
+        # CASCADE remove os anexos automaticamente (FOREIGN KEY ON DELETE CASCADE).
+        # Os arquivos físicos são deletados pelo handler do servidor (precisa caminho).
+        self.conn.execute("DELETE FROM granola_modelos WHERE id = ?", (modelo_id,))
+        self.conn.commit()
+
+    def listar_anexos_modelo(self, modelo_id: int) -> list[dict]:
+        rows = self.conn.execute(
+            "SELECT * FROM granola_modelo_anexos WHERE modelo_id = ? ORDER BY criado_em DESC",
+            (modelo_id,)
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def criar_anexo_modelo(self, dados: dict) -> int:
+        dados["criado_em"] = self._now()
+        return self._insert("granola_modelo_anexos", dados)
+
+    def get_anexo_modelo(self, anexo_id: int) -> dict | None:
+        row = self.conn.execute(
+            "SELECT * FROM granola_modelo_anexos WHERE id = ?", (anexo_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def delete_anexo_modelo(self, anexo_id: int):
+        self._delete("granola_modelo_anexos", anexo_id)
 
     # ============================================================
     #  PENDING EDITS (Approval Workflow)
