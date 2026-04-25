@@ -4,6 +4,7 @@ import { AgendaPage } from "@/pages/AgendaPage"
 import { AgoraPage } from "@/pages/AgoraPage"
 import { ClienteDetailPage } from "@/pages/ClienteDetailPage"
 import { ClientesPage } from "@/pages/ClientesPage"
+import { ConfigPage } from "@/pages/ConfigPage"
 import { DocumentosPage } from "@/pages/DocumentosPage"
 import { FinanceiroPage } from "@/pages/FinanceiroPage"
 import { KanbanPage } from "@/pages/KanbanPage"
@@ -100,7 +101,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "/config",
-            element: <PlaceholderPage title="Configurações" phase={6} />,
+            element: <ConfigPage />,
           },
           {
             path: "*",
