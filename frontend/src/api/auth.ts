@@ -2,7 +2,10 @@ import { apiGet, apiPost } from "./client"
 import type { LoginResponse, MeResponse } from "@/types/auth"
 
 export async function fetchMe() {
-  return apiGet<MeResponse>("/api/auth/me")
+  // ignoreUnauthorized: 401 aqui significa "sessao invalida ou expirada" —
+  // comportamento esperado quando o usuario abre o app deslogado. Sem isso,
+  // entrariamos em loop com o handler global do api/client.
+  return apiGet<MeResponse>("/api/auth/me", { ignoreUnauthorized: true })
 }
 
 export async function postLogin(input: { username: string; password: string }) {

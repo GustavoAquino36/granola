@@ -1,8 +1,9 @@
-import { useCallback, useMemo } from "react"
+import { useCallback, useEffect, useMemo } from "react"
 import type { ReactNode } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { fetchMe, postLogin, postLogout } from "@/api/auth"
-import { ApiError } from "@/api/client"
+import { ApiError, setUnauthorizedHandler } from "@/api/client"
+import { toast } from "sonner"
 import {
   AUTH_ME_KEY,
   AuthContext,
@@ -78,6 +79,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // dados do usuario anterior num flash antes do refetch.
     queryClient.clear()
   }, [logoutMutation, queryClient])
+
+  /**
+   * Registra handler global de 401: quando uma request mid-session retorna
+   * Unauthorized, marcamos o user como deslogado, limpamos o cache, mostramos
+   * toast informativo e mandamos pra /login com o `next` da rota atual pra
+   * voltar pro mesmo lugar depois do re-login.
+   *
+   * Importante: isso NAO eh disparado pelo fetchMe (que usa ignoreUnauthorized
+   * pra evitar loop quando o user abre o app sem sessao).
+   */
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      const wasAuthenticated =
+        queryClient.getQueryData(AUTH_ME_KEY) != null
+      queryClient.setQueryData(AUTH_ME_KEY, null)
+      queryClient.clear()
+      if (wasAuthenticated) {
+        // Toast suave so se o usuario tinha sessao ativa (evita ruido na
+        // tela de login)
+        toast.error("Sua sessão expirou. Entre de novo pra continuar.")
+        const next = encodeURIComponent(
+          window.location.pathname + window.location.search
+        )
+        window.location.assign(`/login?next=${next}`)
+      }
+    })
+  }, [queryClient])
 
   const value = useMemo<AuthContextValue>(
     () => ({

@@ -1,11 +1,14 @@
 /**
- * Fetcher central do frontend-v2.
+ * Fetcher central do frontend.
  *
  * - Sempre `credentials: "include"` pra o cookie `granola_session` setado pelo backend
  *   ir junto (o Vite proxy mantem same-origin, entao cookie funciona sem CORS credentials).
  * - Sempre `Content-Type: application/json` em POST/PUT/PATCH.
  * - Erros de rede ou status nao-2xx viram `ApiError` com a mensagem do backend
  *   (ou um fallback em portugues).
+ * - 401 mid-session dispara handler global (registrado pelo AuthProvider) que
+ *   limpa o cache e manda pra /login. Antes disso, cada componente tinha que
+ *   tratar 401 sozinho — agora eh centralizado.
  */
 
 export class ApiError extends Error {
@@ -22,9 +25,27 @@ export class ApiError extends Error {
 
 interface RequestOptions {
   signal?: AbortSignal
+  /** Quando true, suprime o handler global de 401 (usado pelo /api/auth/me
+   *  pra evitar loop quando o user ainda nao esta autenticado). */
+  ignoreUnauthorized?: boolean
 }
 
-async function handleResponse<T>(response: Response): Promise<T> {
+// --------------------------------------------------------------------------
+// Handler global de 401 — registrado pelo AuthProvider no mount.
+// --------------------------------------------------------------------------
+
+let unauthorizedHandler: (() => void) | null = null
+
+/** Registrado pelo AuthProvider. Disparado quando qualquer fetch retorna 401
+ *  fora do contexto de "checar sessao" (que usa ignoreUnauthorized). */
+export function setUnauthorizedHandler(handler: () => void) {
+  unauthorizedHandler = handler
+}
+
+async function handleResponse<T>(
+  response: Response,
+  ignoreUnauthorized?: boolean
+): Promise<T> {
   const contentType = response.headers.get("content-type") ?? ""
   const isJson = contentType.includes("application/json")
   const payload = isJson ? await response.json().catch(() => null) : null
@@ -37,7 +58,15 @@ async function handleResponse<T>(response: Response): Promise<T> {
       (payload && typeof payload === "object" && "message" in payload && typeof payload.message === "string"
         ? payload.message
         : null) ??
-      `Erro ${response.status} · ${response.statusText || "falha na requisicao"}`
+      `Erro ${response.status} · ${response.statusText || "falha na requisição"}`
+
+    // 401 mid-session: dispara handler global. Se nao foi suprimido pelo
+    // chamador (fetchMe usa ignoreUnauthorized), o AuthProvider redireciona.
+    if (response.status === 401 && !ignoreUnauthorized && unauthorizedHandler) {
+      // setTimeout pra garantir que o erro propague antes da limpeza do cache
+      // (evita race com componentes que ainda dependem de queries em-voo)
+      setTimeout(() => unauthorizedHandler?.(), 0)
+    }
 
     throw new ApiError(message, response.status, payload)
   }
@@ -51,7 +80,7 @@ export async function apiGet<T>(path: string, options?: RequestOptions): Promise
     credentials: "include",
     signal: options?.signal,
   })
-  return handleResponse<T>(response)
+  return handleResponse<T>(response, options?.ignoreUnauthorized)
 }
 
 export async function apiPost<T>(
@@ -66,5 +95,5 @@ export async function apiPost<T>(
     body: body !== undefined ? JSON.stringify(body) : undefined,
     signal: options?.signal,
   })
-  return handleResponse<T>(response)
+  return handleResponse<T>(response, options?.ignoreUnauthorized)
 }

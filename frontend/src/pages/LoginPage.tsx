@@ -120,7 +120,7 @@ export function LoginPage() {
           {error && (
             <p
               role="alert"
-              className="mt-2 border-l-2 border-erro bg-erro/8 px-3 py-2 text-sm text-erro"
+              className="mt-2 rounded-card border-l-2 border-erro bg-erro/8 px-3 py-2 text-sm text-erro"
             >
               {error}
             </p>

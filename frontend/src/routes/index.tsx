@@ -1,21 +1,86 @@
+import { lazy, Suspense } from "react"
 import { createBrowserRouter, Navigate } from "react-router-dom"
 import { AppShell } from "@/components/layout/AppShell"
-import { AgendaPage } from "@/pages/AgendaPage"
-import { AgoraPage } from "@/pages/AgoraPage"
-import { ClienteDetailPage } from "@/pages/ClienteDetailPage"
-import { ClientesPage } from "@/pages/ClientesPage"
-import { ConfigPage } from "@/pages/ConfigPage"
-import { DocumentosPage } from "@/pages/DocumentosPage"
-import { FinanceiroPage } from "@/pages/FinanceiroPage"
-import { KanbanPage } from "@/pages/KanbanPage"
-import { ModeloEditorPage } from "@/pages/ModeloEditorPage"
-import { ModelosPage } from "@/pages/ModelosPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { PlaceholderPage } from "@/pages/PlaceholderPage"
-import { PrazosPage } from "@/pages/PrazosPage"
-import { ProcessoDetailPage } from "@/pages/ProcessoDetailPage"
-import { ProcessosPage } from "@/pages/ProcessosPage"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ProtectedRoute } from "./ProtectedRoute"
+
+/**
+ * Code-splitting (Fase 6.5): cada page vira chunk separado via lazy().
+ * Resultado: first-load do app cai dramaticamente porque o bundle gigante
+ * (~1.3MB) só carrega o necessário pra rota visitada. Tiptap (~400KB) só
+ * baixa quando o usuario abre /modelos/:id.
+ *
+ * LoginPage e PlaceholderPage ficam eager — sao usadas no boot/erro e
+ * baixar elas async causaria flash no caminho mais comum (login).
+ */
+const AgendaPage = lazy(() =>
+  import("@/pages/AgendaPage").then((m) => ({ default: m.AgendaPage }))
+)
+const AgoraPage = lazy(() =>
+  import("@/pages/AgoraPage").then((m) => ({ default: m.AgoraPage }))
+)
+const ClienteDetailPage = lazy(() =>
+  import("@/pages/ClienteDetailPage").then((m) => ({
+    default: m.ClienteDetailPage,
+  }))
+)
+const ClientesPage = lazy(() =>
+  import("@/pages/ClientesPage").then((m) => ({ default: m.ClientesPage }))
+)
+const ConfigPage = lazy(() =>
+  import("@/pages/ConfigPage").then((m) => ({ default: m.ConfigPage }))
+)
+const DocumentosPage = lazy(() =>
+  import("@/pages/DocumentosPage").then((m) => ({ default: m.DocumentosPage }))
+)
+const FinanceiroPage = lazy(() =>
+  import("@/pages/FinanceiroPage").then((m) => ({ default: m.FinanceiroPage }))
+)
+const KanbanPage = lazy(() =>
+  import("@/pages/KanbanPage").then((m) => ({ default: m.KanbanPage }))
+)
+const ModeloEditorPage = lazy(() =>
+  import("@/pages/ModeloEditorPage").then((m) => ({
+    default: m.ModeloEditorPage,
+  }))
+)
+const ModelosPage = lazy(() =>
+  import("@/pages/ModelosPage").then((m) => ({ default: m.ModelosPage }))
+)
+const PrazosPage = lazy(() =>
+  import("@/pages/PrazosPage").then((m) => ({ default: m.PrazosPage }))
+)
+const ProcessoDetailPage = lazy(() =>
+  import("@/pages/ProcessoDetailPage").then((m) => ({
+    default: m.ProcessoDetailPage,
+  }))
+)
+const ProcessosPage = lazy(() =>
+  import("@/pages/ProcessosPage").then((m) => ({ default: m.ProcessosPage }))
+)
+
+/**
+ * Fallback discreto enquanto o chunk da page baixa.
+ * Mantem layout estavel (header skeleton + corpo skeleton) pra evitar
+ * jumps quando a page real renderiza.
+ */
+function PageLoading() {
+  return (
+    <div className="px-8 py-8 lg:px-10 lg:py-10">
+      <div className="mb-6 space-y-2">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-64" />
+      </div>
+      <Skeleton className="h-64 w-full rounded-card" />
+    </div>
+  )
+}
+
+function lazyPage(node: React.ReactNode) {
+  return <Suspense fallback={<PageLoading />}>{node}</Suspense>
+}
 
 /**
  * Roteamento oficial do frontend.
@@ -41,46 +106,16 @@ export const router = createBrowserRouter([
       {
         element: <AppShell />,
         children: [
-          {
-            path: "/agora",
-            element: <AgoraPage />,
-          },
-          {
-            path: "/clientes",
-            element: <ClientesPage />,
-          },
-          {
-            path: "/clientes/:id",
-            element: <ClienteDetailPage />,
-          },
-          {
-            path: "/processos",
-            element: <ProcessosPage />,
-          },
-          {
-            path: "/processos/:id",
-            element: <ProcessoDetailPage />,
-          },
-          {
-            path: "/kanban",
-            element: <KanbanPage />,
-          },
-          {
-            path: "/prazos",
-            element: <PrazosPage />,
-          },
-          {
-            path: "/documentos",
-            element: <DocumentosPage />,
-          },
-          {
-            path: "/agenda",
-            element: <AgendaPage />,
-          },
-          {
-            path: "/financeiro",
-            element: <FinanceiroPage />,
-          },
+          { path: "/agora", element: lazyPage(<AgoraPage />) },
+          { path: "/clientes", element: lazyPage(<ClientesPage />) },
+          { path: "/clientes/:id", element: lazyPage(<ClienteDetailPage />) },
+          { path: "/processos", element: lazyPage(<ProcessosPage />) },
+          { path: "/processos/:id", element: lazyPage(<ProcessoDetailPage />) },
+          { path: "/kanban", element: lazyPage(<KanbanPage />) },
+          { path: "/prazos", element: lazyPage(<PrazosPage />) },
+          { path: "/documentos", element: lazyPage(<DocumentosPage />) },
+          { path: "/agenda", element: lazyPage(<AgendaPage />) },
+          { path: "/financeiro", element: lazyPage(<FinanceiroPage />) },
           {
             path: "/gastos",
             element: (
@@ -91,18 +126,9 @@ export const router = createBrowserRouter([
               />
             ),
           },
-          {
-            path: "/modelos",
-            element: <ModelosPage />,
-          },
-          {
-            path: "/modelos/:id",
-            element: <ModeloEditorPage />,
-          },
-          {
-            path: "/config",
-            element: <ConfigPage />,
-          },
+          { path: "/modelos", element: lazyPage(<ModelosPage />) },
+          { path: "/modelos/:id", element: lazyPage(<ModeloEditorPage />) },
+          { path: "/config", element: lazyPage(<ConfigPage />) },
           {
             path: "*",
             element: (

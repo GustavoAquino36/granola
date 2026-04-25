@@ -36,7 +36,7 @@ export function AtividadeRecenteCard() {
       {isLoading ? (
         <LoadingTimeline />
       ) : isError ? (
-        <div className="px-5 py-4 text-sm text-erro">
+        <div className="rounded-card border-l-2 border-erro bg-erro/8 px-3 py-2 mx-5 my-3 text-sm text-erro">
           Não foi possível carregar a atividade.
         </div>
       ) : movs.length === 0 ? (
