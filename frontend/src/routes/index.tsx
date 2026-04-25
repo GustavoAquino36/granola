@@ -8,6 +8,8 @@ import { ConfigPage } from "@/pages/ConfigPage"
 import { DocumentosPage } from "@/pages/DocumentosPage"
 import { FinanceiroPage } from "@/pages/FinanceiroPage"
 import { KanbanPage } from "@/pages/KanbanPage"
+import { ModeloEditorPage } from "@/pages/ModeloEditorPage"
+import { ModelosPage } from "@/pages/ModelosPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { PlaceholderPage } from "@/pages/PlaceholderPage"
 import { PrazosPage } from "@/pages/PrazosPage"
@@ -91,13 +93,11 @@ export const router = createBrowserRouter([
           },
           {
             path: "/modelos",
-            element: (
-              <PlaceholderPage
-                title="Modelos"
-                phase={6}
-                hint="Biblioteca de pecas e contratos — tabela ainda nao existe no backend, migration entra antes da Fase 6."
-              />
-            ),
+            element: <ModelosPage />,
+          },
+          {
+            path: "/modelos/:id",
+            element: <ModeloEditorPage />,
           },
           {
             path: "/config",
