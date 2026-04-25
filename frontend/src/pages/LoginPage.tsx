@@ -39,8 +39,15 @@ export function LoginPage() {
     setSubmitting(true)
     setError(null)
     try {
-      await login(username.trim(), password)
-      navigate(next, { replace: true })
+      const user = await login(username.trim(), password)
+      // Force change password: o admin resetou a senha. Manda direto pro
+      // /config?force-change=1 — ConfigPage abre o ChangePasswordDialog em
+      // modo forced (sem botao de cancelar) ate o usuario trocar.
+      if (user.must_change_password === 1) {
+        navigate("/config?force-change=1", { replace: true })
+      } else {
+        navigate(next, { replace: true })
+      }
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.status === 401 ? "Usuario ou senha invalidos." : err.message)

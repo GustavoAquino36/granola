@@ -59,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         display_name: response.user.display_name,
         role: response.user.role,
         ambiente: "granola",
+        must_change_password: response.user.must_change_password,
       }
       queryClient.setQueryData(AUTH_ME_KEY, user)
       return user
