@@ -503,6 +503,105 @@ export interface GcalSyncStats {
 }
 
 // --------------------------------------------------------------------------
+// ADMIN / USERS
+// --------------------------------------------------------------------------
+
+export type UserRole =
+  | "admin"
+  | "advogado"
+  | "operador_granola"
+  | "estagiario"
+  | "leitor"
+  | string
+
+export interface AdminUser {
+  id: number
+  username: string
+  display_name: string | null
+  role: UserRole
+  ambiente: string
+  ativo: 0 | 1
+  criado_em: string
+  ultimo_login: string | null
+}
+
+export interface CreateUserInput {
+  username: string
+  password: string
+  display_name?: string
+  role?: UserRole
+  ambiente?: string
+}
+
+/** Body de POST /api/admin/user/atualizar — todos os campos opcionais. */
+export interface UpdateUserInput {
+  id: number
+  display_name?: string
+  role?: UserRole
+  ambiente?: string
+  ativo?: boolean
+  /** Reset de senha pelo admin. Se enviado, volta must_change_password=0. */
+  new_password?: string
+}
+
+// --------------------------------------------------------------------------
+// AUDIT LOG
+// --------------------------------------------------------------------------
+
+export interface AuditLogEntry {
+  id: number
+  user_id: number | null
+  username: string | null
+  action: string
+  module: string
+  entity_type: string | null
+  entity_id: number | null
+  entity_label: string | null
+  details: string | null
+  criado_em: string
+}
+
+export interface AuditLogResponse {
+  logs: AuditLogEntry[]
+  total: number
+}
+
+// --------------------------------------------------------------------------
+// PENDING EDITS (approval workflow)
+// --------------------------------------------------------------------------
+
+export interface PendingEdit {
+  id: number
+  entity_type: string
+  entity_id: number
+  user_id: number | null
+  username: string | null
+  field: string
+  old_value: string | null
+  new_value: string | null
+  status: "pendente" | "aprovado" | "rejeitado" | string
+  criado_em: string
+  revisado_em: string | null
+  revisado_por: number | null
+}
+
+export interface PendingEditsResponse {
+  edits: PendingEdit[]
+  total: number
+}
+
+// --------------------------------------------------------------------------
+// CONFIG (granola_config key/value)
+// --------------------------------------------------------------------------
+
+/** Item da config DJEN (uma OAB + UF) — armazenada como JSON em granola_config.djen_oabs */
+export interface OabConfig {
+  uf: string
+  numero: string
+  nome?: string
+}
+
+// --------------------------------------------------------------------------
 // COLETA DE PUBLICAÇÕES (DataJud / DJEN / e-SAJ / PJe)
 // --------------------------------------------------------------------------
 

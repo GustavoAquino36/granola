@@ -8,6 +8,9 @@ export interface AuthUser {
   display_name: string
   role: string
   ambiente: string
+  /** Backend marca 1 quando o usuario PRECISA trocar a senha (admin reset, etc.).
+   *  Frontend redireciona pra /config?force-change quando true. */
+  must_change_password?: 0 | 1
 }
 
 export interface LoginResponse {
@@ -29,4 +32,5 @@ export interface MeResponse {
   display_name: string
   role: string
   ambiente: string
+  must_change_password?: 0 | 1
 }

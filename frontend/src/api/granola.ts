@@ -1,12 +1,15 @@
 import { apiGet, apiPost } from "./client"
 import type {
+  AdminUser,
   AgendaEvent,
   AgendaInput,
+  AuditLogResponse,
   ClienteDetail,
   ClienteInput,
   ClientesResponse,
   ColetaDatajudStatus,
   ColetaLogResponse,
+  CreateUserInput,
   DocumentoUploadInput,
   DocumentosResponse,
   FinanceiroInput,
@@ -17,6 +20,7 @@ import type {
   KanbanResponse,
   MovimentacaoInput,
   ParteInput,
+  PendingEditsResponse,
   PrazoInput,
   PrazosResponse,
   ProcessoDetail,
@@ -24,6 +28,7 @@ import type {
   ProcessosResponse,
   ResumoFinanceiro,
   Stats,
+  UpdateUserInput,
 } from "@/types/domain"
 
 export interface AgendaResponse {
@@ -398,6 +403,62 @@ export async function syncGcal() {
 }
 
 // --------------------------------------------------------------------------
+// Admin — /api/admin/users + /api/admin/user/(criar|atualizar)
+// --------------------------------------------------------------------------
+
+export async function fetchUsers() {
+  return apiGet<{ users: AdminUser[] }>("/api/admin/users")
+}
+
+export async function createUser(
+  input: CreateUserInput
+): Promise<{ id: number }> {
+  return apiPost<{ id: number; status: "ok" }>("/api/admin/user/criar", input)
+}
+
+export async function updateUser(input: UpdateUserInput) {
+  return apiPost<{ status: "ok" }>("/api/admin/user/atualizar", input)
+}
+
+// --------------------------------------------------------------------------
+// Audit Log — /api/granola/audit?limite=N (admin principal apenas)
+// --------------------------------------------------------------------------
+
+export async function fetchAuditLog(limite = 200) {
+  return apiGet<AuditLogResponse>(`/api/granola/audit?limite=${limite}`)
+}
+
+// --------------------------------------------------------------------------
+// Pending Edits — /api/granola/pending + aprovar/rejeitar
+// --------------------------------------------------------------------------
+
+export async function fetchPendingEdits() {
+  return apiGet<PendingEditsResponse>("/api/granola/pending")
+}
+
+export async function aprovarPendingEdit(id: number) {
+  return apiPost<{ status: string }>("/api/granola/pending/aprovar", { id })
+}
+
+export async function rejeitarPendingEdit(id: number) {
+  return apiPost<{ status: string }>("/api/granola/pending/rejeitar", { id })
+}
+
+// --------------------------------------------------------------------------
+// Config (granola_config key/value)
+// --------------------------------------------------------------------------
+
+export async function fetchConfig(key: string) {
+  return apiGet<{ key: string; value: string }>(
+    `/api/granola/config?key=${encodeURIComponent(key)}`
+  )
+}
+
+export async function setConfig(key: string, value: string) {
+  return apiPost<{ status: "ok" }>("/api/granola/config/set", { key, value })
+}
+
+// --------------------------------------------------------------------------
 // Financeiro — /api/granola/financeiro?cliente_id=&processo_id=&tipo=&status=&periodo_inicio=&periodo_fim=&limite=
 // --------------------------------------------------------------------------
 export interface ListarFinanceiroParams {
@@ -546,6 +607,10 @@ export const queryKeys = {
     ["granola", "financeiro", "resumo", params] as const,
   gcalStatus: ["granola", "gcal", "status"] as const,
   gcalCalendars: ["granola", "gcal", "calendars"] as const,
+  users: ["admin", "users"] as const,
+  audit: (limite: number) => ["granola", "audit", limite] as const,
+  pendingEdits: ["granola", "pending"] as const,
+  config: (key: string) => ["granola", "config", key] as const,
   coletaDatajudStatus: ["granola", "coleta", "datajud", "status"] as const,
   coletaDjenStatus: ["granola", "coleta", "djen", "status"] as const,
   coletaLog: (since: number) =>
