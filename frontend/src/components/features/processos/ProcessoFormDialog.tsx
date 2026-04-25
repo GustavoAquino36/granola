@@ -71,7 +71,7 @@ const processoSchema = z.object({
   cpf_cnpj_contraria: optionalString,
   advogado_contrario: optionalString,
   oab_contrario: optionalString,
-  valor_causa: z.number().min(0, "Valor nao pode ser negativo.").optional(),
+  valor_causa: z.number().min(0, "Valor não pode ser negativo.").optional(),
   link_autos: optionalString,
   observacao: optionalString,
 })
@@ -527,7 +527,7 @@ export function ProcessoFormDialog({
               <p className="rounded-card border-l-2 border-erro bg-erro/8 px-3 py-2 text-sm text-erro">
                 {mutation.error instanceof Error
                   ? mutation.error.message
-                  : "Nao foi possivel salvar."}
+                  : "Não foi possível salvar."}
               </p>
             )}
 

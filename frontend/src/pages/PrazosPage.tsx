@@ -211,7 +211,7 @@ export function PrazosPage() {
           <PrazosLoading />
         ) : isError ? (
           <div className="px-5 py-6 text-sm text-erro">
-            Nao foi possivel carregar os prazos.
+            Não foi possível carregar os prazos.
           </div>
         ) : filtrados.length === 0 ? (
           <EmptyState busca={busca} status={statusFilter} />

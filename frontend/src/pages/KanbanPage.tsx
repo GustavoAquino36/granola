@@ -277,14 +277,24 @@ function DraggableCard({
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: card.id,
   })
+  const titulo = card.titulo || card.numero_cnj || `Processo #${card.id}`
   return (
     <div
       ref={setNodeRef}
       {...attributes}
       {...listeners}
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      aria-label={`Arrastar ${titulo} para outra coluna ou pressionar Enter para abrir`}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          onClick()
+        }
+      }}
       className={cn(
-        "cursor-grab",
+        "cursor-grab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dourado/40 focus-visible:rounded-card",
         isDragging && "opacity-30"
       )}
     >

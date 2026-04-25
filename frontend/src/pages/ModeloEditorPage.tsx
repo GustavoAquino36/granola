@@ -700,11 +700,17 @@ function Sep() {
 }
 
 /** Conversao crua HTML -> texto preservando quebras visíveis. Útil pro
- *  fallback do Copiar quando ClipboardItem com HTML não é suportado. */
+ *  fallback do Copiar quando ClipboardItem com HTML não é suportado.
+ *
+ *  Implementacao via DOMParser (em vez de innerHTML) — sem risco de XSS
+ *  ainda que o conteudo venha corrompido: DOMParser cria um document
+ *  isolado que nao executa scripts nem dispara eventos como onerror.
+ */
 function htmlToText(html: string): string {
-  const tmp = document.createElement("div")
-  tmp.innerHTML = html
-    .replace(/<\/(p|h[1-6]|li|blockquote)>/gi, "\n")
+  const normalized = html
+    .replace(/<\/(p|h[1-6]|li|blockquote)>/gi, "$&\n")
     .replace(/<br\s*\/?>/gi, "\n")
-  return (tmp.textContent || "").replace(/\n{3,}/g, "\n\n").trim()
+  const doc = new DOMParser().parseFromString(normalized, "text/html")
+  const text = doc.body.textContent ?? ""
+  return text.replace(/\n{3,}/g, "\n\n").trim()
 }

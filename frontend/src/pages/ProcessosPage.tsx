@@ -140,7 +140,7 @@ export function ProcessosPage() {
               <Input
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
-                placeholder="CNJ, titulo, cliente…"
+                placeholder="CNJ, título, cliente…"
                 className="h-auto min-w-0 flex-1 border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
               />
             </div>
@@ -191,7 +191,7 @@ export function ProcessosPage() {
           <ProcessosLoading />
         ) : isError ? (
           <div className="px-5 py-6 text-sm text-erro">
-            Nao foi possivel carregar processos.
+            Não foi possível carregar processos.
           </div>
         ) : processos.length === 0 ? (
           <EmptyState busca={busca} status={status} />
@@ -203,7 +203,7 @@ export function ProcessosPage() {
                 <Th>Cliente</Th>
                 <Th>Vara · Tribunal</Th>
                 <Th className="text-right">Valor da causa</Th>
-                <Th>Ultima atualizacao</Th>
+                <Th>Última atualização</Th>
                 <Th className="pl-3 pr-5 w-10"></Th>
               </TableRow>
             </TableHeader>

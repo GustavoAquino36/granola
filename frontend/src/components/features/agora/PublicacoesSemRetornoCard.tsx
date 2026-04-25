@@ -128,7 +128,7 @@ export function PublicacoesSemRetornoCard() {
         </div>
       ) : isError ? (
         <CardContent className="px-5 py-6 text-sm text-erro">
-          Nao foi possivel carregar o status da coleta.
+          Não foi possível carregar o status da coleta.
         </CardContent>
       ) : coletaNunca ? (
         <CardContent className="px-5 py-6 text-center">

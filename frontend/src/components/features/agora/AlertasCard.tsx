@@ -58,11 +58,11 @@ export function AlertasCard() {
           </>
         ) : isError ? (
           <div className="px-1 py-2 text-sm text-erro">
-            Nao foi possivel carregar alertas.
+            Não foi possível carregar alertas.
           </div>
         ) : alertas.length === 0 ? (
           <p className="font-display italic text-muted text-base py-3 px-1">
-            Tudo em dia. Nada exige atencao agora.
+            Tudo em dia. Nada exige atenção agora.
           </p>
         ) : (
           alertas.map((a, i) => <AlertRow key={i} item={a} />)
@@ -195,7 +195,7 @@ function deriveAlertas(stats: {
       variant: "ok",
       Icon: CheckCircle2,
       title: "Tudo em dia",
-      desc: "Nenhum prazo fatal nos proximos 7 dias.",
+      desc: "Nenhum prazo fatal nos próximos 7 dias.",
     })
   }
 

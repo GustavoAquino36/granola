@@ -52,7 +52,7 @@ export function ClienteDetailPage() {
 
   const archiveMutation = useMutation({
     mutationFn: async () => {
-      if (!data) throw new Error("Cliente nao carregado")
+      if (!data) throw new Error("Cliente não carregado")
       return data.ativo === 1
         ? archiveCliente(data.id)
         : unarchiveCliente(data.id)
@@ -100,7 +100,7 @@ export function ClienteDetailPage() {
         <div className="rounded-card border border-erro/20 bg-erro/5 px-4 py-6 text-sm text-erro">
           {error instanceof Error
             ? error.message
-            : "Nao foi possivel carregar o cliente."}
+            : "Não foi possível carregar o cliente."}
         </div>
       ) : (
         <>
@@ -154,7 +154,7 @@ export function ClienteDetailPage() {
                 <p className="rounded-card border-l-2 border-erro bg-erro/8 px-3 py-2 text-sm text-erro">
                   {archiveMutation.error instanceof Error
                     ? archiveMutation.error.message
-                    : "Nao foi possivel concluir."}
+                    : "Não foi possível concluir."}
                 </p>
               )}
               <AlertDialogFooter>

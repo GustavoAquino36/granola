@@ -39,19 +39,14 @@ export function ChangePasswordDialog({
   forced,
   onSuccess,
 }: ChangePasswordDialogProps) {
+  // Esc + click-outside SEMPRE fecham (WCAG 2.1.2 — no keyboard trap).
+  // Em modo forced, a UX de "obrigar troca" eh feita pela ConfigPage,
+  // que mostra um banner persistente + reabre o dialog se o usuario
+  // tentar navegar pra outro lugar. Aqui, dialog eh dispensavel mesmo
+  // forced, pra nao virar trap.
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(o) => {
-        // Em forced, ignora tentativas de fechar via overlay/Esc
-        if (!forced) onOpenChange(o)
-      }}
-    >
-      <DialogContent
-        className="sm:max-w-[440px]"
-        onInteractOutside={(e) => forced && e.preventDefault()}
-        onEscapeKeyDown={(e) => forced && e.preventDefault()}
-      >
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[440px]">
         {open && (
           <ChangePasswordInner
             forced={forced}

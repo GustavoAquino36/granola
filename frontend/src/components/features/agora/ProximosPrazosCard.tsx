@@ -102,7 +102,7 @@ export function ProximosPrazosCard() {
         <PrazosLoading />
       ) : isError ? (
         <div className="px-5 py-4 text-sm text-erro">
-          Nao foi possivel carregar os prazos.
+          Não foi possível carregar os prazos.
         </div>
       ) : prazos.length === 0 ? (
         <EmptyState filtro={filtro} />
@@ -211,7 +211,7 @@ function PrazosLoading() {
 function EmptyState({ filtro }: { filtro: Filtro }) {
   const mensagens: Record<Filtro, string> = {
     todos: "Nenhum prazo pendente. Respire fundo.",
-    urgente: "Nenhum prazo urgente nos proximos 3 dias.",
+    urgente: "Nenhum prazo urgente nos próximos 3 dias.",
     semana: "Semana limpa — nada vencendo ate domingo.",
     vencidos: "Nenhum prazo vencido. Mantenha o ritmo.",
   }

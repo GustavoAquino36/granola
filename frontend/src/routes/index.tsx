@@ -107,7 +107,7 @@ export const router = createBrowserRouter([
             path: "*",
             element: (
               <PlaceholderPage
-                title="404 · rota nao encontrada"
+                title="404 · rota não encontrada"
                 phase={0}
                 hint="Verifique o link ou volte para /agora."
               />

@@ -33,7 +33,7 @@ export function LoginPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!username.trim() || !password) {
-      setError("Preencha usuario e senha.")
+      setError("Preencha usuário e senha.")
       return
     }
     setSubmitting(true)
@@ -50,9 +50,9 @@ export function LoginPage() {
       }
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.status === 401 ? "Usuario ou senha invalidos." : err.message)
+        setError(err.status === 401 ? "Usuário ou senha inválidos." : err.message)
       } else {
-        setError("Nao foi possivel autenticar. Verifique se o backend esta em pe em :3458.")
+        setError("Não foi possível autenticar. Verifique se o backend esta em pe em :3458.")
       }
       setSubmitting(false)
     }
@@ -100,7 +100,7 @@ export function LoginPage() {
           </div>
 
           <Field
-            label="Usuario ou e-mail"
+            label="Usuário ou e-mail"
             type="text"
             value={username}
             onChange={setUsername}
@@ -142,7 +142,7 @@ export function LoginPage() {
 
           <button
             type="button"
-            onClick={() => alert("Recuperacao de senha ainda nao implementada no backend.")}
+            onClick={() => alert("Recuperação de senha ainda não implementada no backend.")}
             className="mt-5 block w-full text-center font-sans text-sm text-dourado underline decoration-dourado/50 underline-offset-[3px] hover:decoration-dourado"
           >
             Esqueci minha senha

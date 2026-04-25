@@ -191,7 +191,7 @@ export function ClientesPage() {
           <ClientesLoading />
         ) : isError ? (
           <div className="px-5 py-6 text-sm text-erro">
-            Nao foi possivel carregar clientes.
+            Não foi possível carregar clientes.
           </div>
         ) : clientes.length === 0 ? (
           <EmptyState busca={busca} ativo={ativo} />
@@ -279,7 +279,7 @@ export function ClientesPage() {
                 <p className="rounded-card border-l-2 border-erro bg-erro/8 px-3 py-2 text-sm text-erro">
                   {archiveMutation.error instanceof Error
                     ? archiveMutation.error.message
-                    : "Nao foi possivel concluir."}
+                    : "Não foi possível concluir."}
                 </p>
               )}
               <AlertDialogFooter>

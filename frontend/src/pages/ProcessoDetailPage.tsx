@@ -94,7 +94,7 @@ export function ProcessoDetailPage() {
     return (
       <div className="px-8 py-12 text-center">
         <p className="font-display text-xl italic text-muted">
-          ID de processo invalido.
+          ID de processo inválido.
         </p>
         <Button
           variant="ghost"
@@ -124,7 +124,7 @@ export function ProcessoDetailPage() {
         <div className="rounded-card border border-erro/20 bg-erro/5 px-4 py-6 text-sm text-erro">
           {error instanceof Error
             ? error.message
-            : "Nao foi possivel carregar o processo."}
+            : "Não foi possível carregar o processo."}
         </div>
       ) : (
         <>
@@ -190,14 +190,14 @@ export function ProcessoDetailPage() {
                   {confirm === "encerrar" && (
                     <>
                       O processo <strong>{data.titulo}</strong> sai de atendimento
-                      ativo. Movimentacoes e prazos ficam preservados; voce pode
+                      ativo. Movimentações e prazos ficam preservados; você pode
                       reativar mudando o status depois.
                     </>
                   )}
                   {confirm === "arquivar" && (
                     <>
                       <strong>{data.titulo}</strong> sai da lista principal.
-                      <strong> Nao e apagado</strong> — historico, partes e documentos
+                      <strong> Nao e apagado</strong> — histórico, partes e documentos
                       ficam intactos. Pode reativar a qualquer momento.
                     </>
                   )}
@@ -213,7 +213,7 @@ export function ProcessoDetailPage() {
                 <p className="rounded-card border-l-2 border-erro bg-erro/8 px-3 py-2 text-sm text-erro">
                   {mutation.error instanceof Error
                     ? mutation.error.message
-                    : "Nao foi possivel concluir."}
+                    : "Não foi possível concluir."}
                 </p>
               )}
               <AlertDialogFooter>

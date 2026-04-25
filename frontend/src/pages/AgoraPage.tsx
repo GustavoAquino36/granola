@@ -26,7 +26,7 @@ export function AgoraPage() {
   const { user } = useAuth()
   const now = useMemo(() => new Date(), [])
   const greeting = greetingFor(now.getHours())
-  const name = user?.display_name ?? "Usuario"
+  const name = user?.display_name ?? "Usuário"
 
   const formattedDate = useMemo(() => {
     const fmt = new Intl.DateTimeFormat("pt-BR", {
@@ -49,7 +49,7 @@ export function AgoraPage() {
             </em>
           </h1>
           <p className="font-display mt-1.5 text-lg italic text-muted">
-            {formattedDate} · sua area de trabalho do dia.
+            {formattedDate} · sua área de trabalho do dia.
           </p>
         </div>
 

@@ -83,6 +83,36 @@ export function ConfigPage() {
         </p>
       </header>
 
+      {/* Banner de force-change: aparece se URL tem ?force-change=1 e o
+          dialog foi dispensado. Cumpre WCAG 2.1.2 (Esc fecha o modal) sem
+          perder o senso de obrigatoriedade — usuário fica preso em /config
+          ate trocar a senha. */}
+      {forceChange && !forcedDialogOpen && (
+        <div className="mb-6 flex flex-col items-start gap-3 rounded-card border-l-4 border-erro bg-erro/8 px-5 py-4 sm:flex-row sm:items-center">
+          <ShieldAlert className="h-5 w-5 shrink-0 text-erro" strokeWidth={1.75} />
+          <div className="flex-1">
+            <p className="font-sans text-[0.95rem] font-semibold text-foreground">
+              Você precisa definir uma nova senha para continuar.
+            </p>
+            <p className="mt-0.5 text-[0.84rem] text-muted">
+              O administrador resetou sua senha. Outras telas ficam bloqueadas
+              até a troca ser feita.
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setForcedDialogOpen(true)}
+            className={cn(
+              "bg-erro text-marfim hover:bg-erro/90 shrink-0",
+            )}
+          >
+            <KeyRound className="h-3.5 w-3.5" strokeWidth={1.75} />
+            Definir agora
+          </Button>
+        </div>
+      )}
+
       <Tabs defaultValue="conta">
         <TabsList>
           <TabsTrigger value="conta">Conta</TabsTrigger>

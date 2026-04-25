@@ -40,7 +40,7 @@ export function KpiGrid() {
   if (isError || !data) {
     return (
       <div className="mb-6 rounded-card border border-erro/20 bg-erro/5 px-4 py-3 text-sm text-erro">
-        Nao foi possivel carregar os indicadores. Verifique se o backend esta ativo em <code className="font-mono">:3458</code>.
+        Não foi possível carregar os indicadores. Verifique se o backend esta ativo em <code className="font-mono">:3458</code>.
       </div>
     )
   }

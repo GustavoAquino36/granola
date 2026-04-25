@@ -210,17 +210,24 @@ function Toolbar({ editor }: { editor: Editor | null }) {
         active={editor.isActive("link")}
         onClick={() => {
           const previous = editor.getAttributes("link").href ?? ""
-          const url = window.prompt("Link (deixe vazio pra remover):", previous)
-          if (url === null) return
-          if (url === "") {
+          const raw = window.prompt("Link (deixe vazio pra remover):", previous)
+          if (raw === null) return
+          if (raw === "") {
             editor.chain().focus().extendMarkRange("link").unsetLink().run()
+            return
+          }
+          // Valida o protocolo: bloqueia javascript:/data:/file: que poderiam
+          // executar codigo. Adiciona https:// quando o user nao colocou esquema.
+          const safe = sanitizeLinkUrl(raw.trim())
+          if (!safe) {
+            window.alert("Link inválido. Use um URL http(s) ou mailto/tel.")
             return
           }
           editor
             .chain()
             .focus()
             .extendMarkRange("link")
-            .setLink({ href: url })
+            .setLink({ href: safe })
             .run()
         }}
         title="Link"
@@ -284,4 +291,27 @@ function Sep() {
   return (
     <div className="mx-1 h-5 w-px bg-border" aria-hidden />
   )
+}
+
+/**
+ * Aceita URL HTTP(S), mailto: e tel:. Bloqueia javascript:, data:, file:
+ * e qualquer outro protocolo que possa executar codigo.
+ *
+ * Quando o user nao informa esquema (ex: "exemplo.com.br"), prefixa https://.
+ * Retorna null se o URL ainda for invalido apos a tentativa.
+ */
+function sanitizeLinkUrl(raw: string): string | null {
+  if (!raw) return null
+  // Permite mailto: e tel: explicitos
+  if (/^mailto:/i.test(raw) || /^tel:/i.test(raw)) return raw
+  // Adiciona protocolo se faltar
+  const withProtocol = /^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`
+  try {
+    const u = new URL(withProtocol)
+    // Whitelist de protocolos seguros
+    if (u.protocol === "http:" || u.protocol === "https:") return u.toString()
+    return null
+  } catch {
+    return null
+  }
 }
