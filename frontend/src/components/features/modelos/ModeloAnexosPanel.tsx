@@ -25,8 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
-
-const MAX_BYTES = 10 * 1024 * 1024 // bate com o backend
+import { fileToBase64, formatBytes, MAX_ANEXO_BYTES } from "./anexo-utils"
 
 interface ModeloAnexosPanelProps {
   modeloId: number
@@ -66,7 +65,7 @@ export function ModeloAnexosPanel({ modeloId, anexos }: ModeloAnexosPanelProps) 
   function pickFile(file: File | null) {
     setErrorMsg(null)
     if (!file) return
-    if (file.size > MAX_BYTES) {
+    if (file.size > MAX_ANEXO_BYTES) {
       setErrorMsg(`Arquivo muito grande (${formatBytes(file.size)}). Máximo 10 MB.`)
       return
     }
@@ -247,21 +246,3 @@ export function ModeloAnexosPanel({ modeloId, anexos }: ModeloAnexosPanelProps) 
 
 // --------------------------------------------------------------------------
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onerror = () => reject(reader.error)
-    reader.onload = () => {
-      const result = reader.result as string
-      const idx = result.indexOf(",")
-      resolve(idx >= 0 ? result.slice(idx + 1) : result)
-    }
-    reader.readAsDataURL(file)
-  })
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-}

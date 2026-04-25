@@ -14,6 +14,7 @@ import {
   deleteModelo,
   fetchModeloById,
   queryKeys,
+  uploadModeloAnexo,
   upsertModelo,
   usarModelo,
 } from "@/api/granola"
@@ -25,7 +26,9 @@ import {
   CATEGORIAS_MODELO,
   labelDeCategoria,
 } from "@/components/features/modelos/categorias"
+import { fileToBase64 } from "@/components/features/modelos/anexo-utils"
 import { ModeloAnexosPanel } from "@/components/features/modelos/ModeloAnexosPanel"
+import { PendingAnexosPanel } from "@/components/features/modelos/PendingAnexosPanel"
 import { RichTextEditor } from "@/components/features/modelos/RichTextEditor"
 import {
   AlertDialog,
@@ -96,20 +99,54 @@ function CreateMode() {
   const [descricao, setDescricao] = useState("")
   const [tags, setTags] = useState("")
   const [conteudo, setConteudo] = useState("")
+  const [pendingAnexos, setPendingAnexos] = useState<File[]>([])
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [uploadProgress, setUploadProgress] = useState<{
+    current: number
+    total: number
+  } | null>(null)
 
+  /**
+   * Save em duas etapas:
+   *   1. upsertModelo cria o registro e devolve o id
+   *   2. pra cada File em pendingAnexos: lê base64 + uploadModeloAnexo(id, ...)
+   * Ao final, redireciona pra /modelos/:id (modo edit). Se algum upload falhar,
+   * o modelo ja existe; o user recebe a mensagem mas nao perde o trabalho.
+   */
   const mutation = useMutation({
-    mutationFn: () =>
-      upsertModelo({
+    mutationFn: async () => {
+      // Etapa 1
+      const { id } = await upsertModelo({
         nome: nome.trim(),
         categoria,
         descricao: descricao.trim() || null,
         tags: tags.trim() || null,
         conteudo,
-      }),
-    onSuccess: ({ id }) => {
+      })
+
+      // Etapa 2 — sequencial pra ter feedback de progresso simples
+      if (pendingAnexos.length > 0) {
+        setUploadProgress({ current: 0, total: pendingAnexos.length })
+        for (let i = 0; i < pendingAnexos.length; i++) {
+          const file = pendingAnexos[i]
+          const base64 = await fileToBase64(file)
+          await uploadModeloAnexo({
+            modelo_id: id,
+            file: base64,
+            nome: file.name,
+          })
+          setUploadProgress({ current: i + 1, total: pendingAnexos.length })
+        }
+      }
+
+      return id
+    },
+    onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ["granola", "modelos"] })
       navigate(`/modelos/${id}`, { replace: true })
+    },
+    onError: () => {
+      setUploadProgress(null)
     },
   })
 
@@ -122,15 +159,27 @@ function CreateMode() {
     mutation.mutate()
   }
 
+  const saveLabel = mutation.isPending
+    ? uploadProgress
+      ? `Enviando anexo ${uploadProgress.current + 1}/${uploadProgress.total}…`
+      : "Salvando…"
+    : pendingAnexos.length > 0
+      ? `Salvar e enviar ${pendingAnexos.length} anexo${pendingAnexos.length === 1 ? "" : "s"}`
+      : "Salvar"
+
   return (
     <EditorShell
       title="Novo modelo"
       subtitle="vai pro acervo após o primeiro salvamento"
       onBack={() => navigate("/modelos")}
-      saveLabel={mutation.isPending ? "Salvando…" : "Salvar"}
+      saveLabel={saveLabel}
       saveDisabled={mutation.isPending}
       onSave={onSave}
-      footerInfo="rascunho · sem versão · 0 usos"
+      footerInfo={`rascunho · sem versão · 0 usos${
+        pendingAnexos.length > 0
+          ? ` · ${pendingAnexos.length} anexo${pendingAnexos.length === 1 ? "" : "s"} pendente${pendingAnexos.length === 1 ? "" : "s"}`
+          : ""
+      }`}
     >
       <Metadata
         nome={nome}
@@ -145,6 +194,12 @@ function CreateMode() {
 
       <RichTextEditor value={conteudo} onChange={setConteudo} />
 
+      <PendingAnexosPanel
+        pending={pendingAnexos}
+        onChange={setPendingAnexos}
+        uploading={mutation.isPending}
+      />
+
       {(errorMsg || mutation.isError) && (
         <p className="rounded-card border-l-2 border-erro bg-erro/8 px-3 py-2 text-sm text-erro">
           {errorMsg ||
@@ -153,11 +208,6 @@ function CreateMode() {
               : "Não foi possível salvar.")}
         </p>
       )}
-
-      <p className="rounded-card border border-border bg-surface-alt px-4 py-3 text-[0.78rem] italic text-muted">
-        Anexos ficam disponíveis depois do primeiro salvamento — eles são
-        amarrados ao modelo no banco.
-      </p>
     </EditorShell>
   )
 }
